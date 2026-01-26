@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #667eea;
+  --secondary: #764ba2;
+  --accent: #26A69A;
+  --warning: #FF7043;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea11 0%, #764ba211 100%);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.gradient-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.gradient-sidebar {
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.card {
+  @apply bg-white rounded-2xl shadow-lg p-6;
+}
+
+.btn-primary {
+  @apply bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:shadow-lg hover:-translate-y-0.5;
+}
+
+.status-normal { @apply bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold; }
+.status-warning { @apply bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-bold; }
+.status-danger { @apply bg-red-100 text-red-800 px-3 py-1 rounded-full font-bold; }
+
+.tab-btn {
+  @apply px-4 py-2 rounded-lg font-semibold transition-all;
+}
+.tab-btn.active {
+  @apply bg-gradient-to-r from-indigo-500 to-purple-600 text-white;
+}
+.tab-btn:not(.active) {
+  @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+}
+
+.metric-card {
+  @apply bg-white p-4 rounded-xl shadow border-l-4 border-indigo-500;
+}
+
+.input-field {
+  @apply w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors;
+}
