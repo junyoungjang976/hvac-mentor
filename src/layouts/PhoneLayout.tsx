@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, BookOpen, FileText, Settings } from 'lucide-react'
+import { Search, BookOpen, FileText, Settings, Zap } from 'lucide-react'
 
 // Data imports (same as App.tsx)
 import { getFieldStandard } from '../data/fieldStandards'
@@ -14,8 +14,9 @@ import PhoneDiagnosis from '../components/phone/PhoneDiagnosis'
 import PhoneReference from '../components/phone/PhoneReference'
 import PhoneReport from '../components/phone/PhoneReport'
 import PhoneSettings from '../components/phone/PhoneSettings'
+import PhoneElectric from '../components/phone/PhoneElectric'
 
-type PhoneTab = 'diagnosis' | 'reference' | 'report' | 'settings'
+type PhoneTab = 'diagnosis' | 'reference' | 'electric' | 'report' | 'settings'
 
 interface PhoneLayoutProps {
   onDeviceChange: () => void
@@ -84,6 +85,7 @@ export default function PhoneLayout({ onDeviceChange }: PhoneLayoutProps) {
   const tabs = [
     { id: 'diagnosis' as const, label: '진단', icon: Search },
     { id: 'reference' as const, label: '참고', icon: BookOpen },
+    { id: 'electric' as const, label: '회로', icon: Zap },
     { id: 'report' as const, label: '보고서', icon: FileText },
     { id: 'settings' as const, label: '설정', icon: Settings },
   ]
@@ -131,6 +133,7 @@ export default function PhoneLayout({ onDeviceChange }: PhoneLayoutProps) {
           />
         )}
         {activeTab === 'reference' && <PhoneReference />}
+        {activeTab === 'electric' && <PhoneElectric />}
         {activeTab === 'report' && (
           <PhoneReport
             refrigerant={refrigerant}
