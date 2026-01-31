@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { Search, FileText, BookOpen, AlertTriangle, CheckSquare, Syringe, Zap } from 'lucide-react'
 import './index.css'
 
+// Component imports
+import ElectricTab from './components/tabs/ElectricTab'
+
 // Data imports
 import { getFieldStandard, REFRIGERANT_INFO } from './data/fieldStandards'
 import { getHighPressureTarget, calculateSuperheat, calculateSubcooling, calculateCompressionRatio, interpolatePT } from './data/ptChart'
@@ -599,12 +602,7 @@ function App() {
             </div>
           )}
 
-          {activeTab === 'electric' && (
-            <div className="card">
-              <h3 className="text-lg font-bold mb-4">⚡ 전기 회로</h3>
-              <p className="text-gray-500">🚧 이 기능은 개발 중입니다.</p>
-            </div>
-          )}
+          {activeTab === 'electric' && <ElectricTab />}
         </main>
       </div>
 
