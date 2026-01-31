@@ -48,6 +48,28 @@ const STATUS_EMOJI: Record<InspectionStatus, string> = {
   '긴급수리': '🚨',
 }
 
+// Hex colors for report card (html2canvas compatible - no oklch)
+const STATUS_HEX_COLORS: Record<InspectionStatus, { bg: string; text: string }> = {
+  '정상운전': { bg: '#dcfce7', text: '#166534' },
+  '점검필요': { bg: '#fef9c3', text: '#854d0e' },
+  '수리필요': { bg: '#ffedd5', text: '#9a3412' },
+  '긴급수리': { bg: '#fee2e2', text: '#991b1b' },
+}
+
+const SEVERITY_HEX_DOT_COLORS: Record<IssuePreset['severity'], string> = {
+  low: '#9ca3af',
+  medium: '#eab308',
+  high: '#f97316',
+  critical: '#ef4444',
+}
+
+const URGENCY_HEX_COLORS: Record<RecommendationPreset['urgency'], { bg: string; text: string }> = {
+  immediate: { bg: '#fee2e2', text: '#991b1b' },
+  soon: { bg: '#ffedd5', text: '#9a3412' },
+  scheduled: { bg: '#eff6ff', text: '#1e40af' },
+  monitor: { bg: '#f3f4f6', text: '#374151' },
+}
+
 const SEVERITY_COLORS: Record<IssuePreset['severity'], string> = {
   low: 'bg-gray-100 text-gray-700 border-gray-300',
   medium: 'bg-yellow-100 text-yellow-800 border-yellow-400',
@@ -638,64 +660,65 @@ export default function ReportTab({
           <div
             ref={reportCardRef}
             id="report-card"
-            className="w-[400px] bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200"
-            style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            className="w-[400px] rounded-2xl shadow-xl overflow-hidden"
+            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5">
+            <div className="p-5" style={{ background: 'linear-gradient(to right, #4f46e5, #9333ea)', color: '#ffffff' }}>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Thermometer className="text-white" size={28} />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                  <Thermometer style={{ color: '#ffffff' }} size={28} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">HVAC 점검 보고서</h2>
-                  <p className="text-white/80 text-sm">냉동공조 설비 점검 결과</p>
+                  <h2 className="text-xl font-bold" style={{ color: '#ffffff' }}>HVAC 점검 보고서</h2>
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>냉동공조 설비 점검 결과</p>
                 </div>
               </div>
             </div>
 
             {/* Content */}
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4" style={{ backgroundColor: '#ffffff' }}>
               {/* Basic Info */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">점검일</span>
-                  <span className="font-medium">
+                  <span className="text-sm" style={{ color: '#6b7280' }}>점검일</span>
+                  <span className="font-medium" style={{ color: '#1f2937' }}>
                     {inspectionDate ? formatDate(inspectionDate) : '-'}
                   </span>
                 </div>
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500 text-sm">장비</span>
-                  <span className="font-medium text-right max-w-[250px]">
+                  <span className="text-sm" style={{ color: '#6b7280' }}>장비</span>
+                  <span className="font-medium text-right max-w-[250px]" style={{ color: '#1f2937' }}>
                     {equipmentPath || '-'}
                     {modelCapacity && (
-                      <span className="block text-xs text-gray-500">{modelCapacity}</span>
+                      <span className="block text-xs" style={{ color: '#6b7280' }}>{modelCapacity}</span>
                     )}
                   </span>
                 </div>
                 {location && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">설치장소</span>
-                    <span className="font-medium text-right max-w-[200px] truncate">
+                    <span className="text-sm" style={{ color: '#6b7280' }}>설치장소</span>
+                    <span className="font-medium text-right max-w-[200px] truncate" style={{ color: '#1f2937' }}>
                       {location}
                     </span>
                   </div>
                 )}
                 {customerName && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">고객명</span>
-                    <span className="font-medium">{customerName}</span>
+                    <span className="text-sm" style={{ color: '#6b7280' }}>고객명</span>
+                    <span className="font-medium" style={{ color: '#1f2937' }}>{customerName}</span>
                   </div>
                 )}
               </div>
 
               {/* Divider */}
-              <hr className="border-gray-200" />
+              <hr style={{ borderColor: '#e5e7eb' }} />
 
               {/* Status Badge */}
               <div className="flex justify-center">
                 <div
-                  className={`px-6 py-3 rounded-xl ${STATUS_COLORS[status].bg} ${STATUS_COLORS[status].text} text-lg font-bold flex items-center gap-2`}
+                  className="px-6 py-3 rounded-xl text-lg font-bold flex items-center gap-2"
+                  style={{ backgroundColor: STATUS_HEX_COLORS[status].bg, color: STATUS_HEX_COLORS[status].text }}
                 >
                   <span className="text-2xl">{STATUS_EMOJI[status]}</span>
                   {status}
@@ -705,29 +728,29 @@ export default function ReportTab({
               {/* Measurements (if diagnosis data available) */}
               {(lowPressure !== undefined || highPressure !== undefined) && (
                 <>
-                  <hr className="border-gray-200" />
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-sm font-medium text-gray-600 mb-2">측정값</p>
+                  <hr style={{ borderColor: '#e5e7eb' }} />
+                  <div className="rounded-xl p-4" style={{ backgroundColor: '#f9fafb' }}>
+                    <p className="text-sm font-medium mb-2" style={{ color: '#4b5563' }}>측정값</p>
                     <div className="grid grid-cols-2 gap-4">
                       {lowPressure !== undefined && (
                         <div className="text-center">
-                          <p className="text-xs text-gray-500">저압</p>
-                          <p className="text-lg font-bold text-blue-600">
+                          <p className="text-xs" style={{ color: '#6b7280' }}>저압</p>
+                          <p className="text-lg font-bold" style={{ color: '#2563eb' }}>
                             {lowPressure.toFixed(1)} kg/cm²G
                           </p>
                         </div>
                       )}
                       {highPressure !== undefined && (
                         <div className="text-center">
-                          <p className="text-xs text-gray-500">고압</p>
-                          <p className="text-lg font-bold text-red-600">
+                          <p className="text-xs" style={{ color: '#6b7280' }}>고압</p>
+                          <p className="text-lg font-bold" style={{ color: '#dc2626' }}>
                             {highPressure.toFixed(1)} kg/cm²G
                           </p>
                         </div>
                       )}
                     </div>
                     {refrigerant && (
-                      <p className="text-center text-xs text-gray-500 mt-2">
+                      <p className="text-center text-xs mt-2" style={{ color: '#6b7280' }}>
                         냉매: {refrigerant} | {facilityType}
                       </p>
                     )}
@@ -738,14 +761,15 @@ export default function ReportTab({
               {/* Inspection Items */}
               {checkedInspectionItems.size > 0 && (
                 <>
-                  <hr className="border-gray-200" />
+                  <hr style={{ borderColor: '#e5e7eb' }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-2">점검 항목</p>
+                    <p className="text-sm font-medium mb-2" style={{ color: '#4b5563' }}>점검 항목</p>
                     <div className="flex flex-wrap gap-1">
                       {getCheckedInspectionItemNames().map((name, idx) => (
                         <span
                           key={idx}
-                          className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded"
+                          className="text-xs px-2 py-1 rounded"
+                          style={{ backgroundColor: '#eef2ff', color: '#4338ca' }}
                         >
                           {name}
                         </span>
@@ -758,13 +782,13 @@ export default function ReportTab({
               {/* Diagnosis Issues (if available) */}
               {diagnosisResult && diagnosisResult.issues.length > 0 && (
                 <>
-                  <hr className="border-gray-200" />
+                  <hr style={{ borderColor: '#e5e7eb' }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-2">진단 결과</p>
-                    <ul className="text-sm text-gray-700 space-y-1">
+                    <p className="text-sm font-medium mb-2" style={{ color: '#4b5563' }}>진단 결과</p>
+                    <ul className="text-sm space-y-1" style={{ color: '#374151' }}>
                       {diagnosisResult.issues.slice(0, 3).map((issue, idx) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <span className="text-indigo-500 mt-0.5">•</span>
+                          <span className="mt-0.5" style={{ color: '#6366f1' }}>•</span>
                           <span>{issue}</span>
                         </li>
                       ))}
@@ -776,14 +800,15 @@ export default function ReportTab({
               {/* Selected Issues */}
               {selectedIssues.size > 0 && (
                 <>
-                  <hr className="border-gray-200" />
+                  <hr style={{ borderColor: '#e5e7eb' }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-2">발견된 문제</p>
-                    <ul className="text-sm space-y-1">
+                    <p className="text-sm font-medium mb-2" style={{ color: '#4b5563' }}>발견된 문제</p>
+                    <ul className="text-sm space-y-1" style={{ color: '#374151' }}>
                       {getSelectedIssueItems().map((issue) => (
                         <li key={issue.id} className="flex items-center gap-2">
                           <span
-                            className={`w-2 h-2 rounded-full ${SEVERITY_DOT_COLORS[issue.severity]}`}
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: SEVERITY_HEX_DOT_COLORS[issue.severity] }}
                           />
                           <span>{issue.name}</span>
                         </li>
@@ -796,14 +821,15 @@ export default function ReportTab({
               {/* Selected Recommendations */}
               {selectedRecommendations.size > 0 && (
                 <>
-                  <hr className="border-gray-200" />
+                  <hr style={{ borderColor: '#e5e7eb' }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-2">권장사항</p>
-                    <ul className="text-sm space-y-1">
+                    <p className="text-sm font-medium mb-2" style={{ color: '#4b5563' }}>권장사항</p>
+                    <ul className="text-sm space-y-1" style={{ color: '#374151' }}>
                       {getSelectedRecommendationItems().map((rec) => (
                         <li key={rec.id} className="flex items-center gap-2">
                           <span
-                            className={`text-xs px-1.5 py-0.5 rounded ${URGENCY_COLORS[rec.urgency]}`}
+                            className="text-xs px-1.5 py-0.5 rounded"
+                            style={{ backgroundColor: URGENCY_HEX_COLORS[rec.urgency].bg, color: URGENCY_HEX_COLORS[rec.urgency].text }}
                           >
                             {URGENCY_LABELS[rec.urgency]}
                           </span>
@@ -818,10 +844,10 @@ export default function ReportTab({
               {/* Remarks */}
               {remarks && (
                 <>
-                  <hr className="border-gray-200" />
+                  <hr style={{ borderColor: '#e5e7eb' }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">비고</p>
-                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                    <p className="text-sm font-medium mb-1" style={{ color: '#4b5563' }}>비고</p>
+                    <p className="text-sm p-3 rounded-lg" style={{ color: '#374151', backgroundColor: '#f9fafb' }}>
                       {remarks}
                     </p>
                   </div>
@@ -830,15 +856,15 @@ export default function ReportTab({
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-5 py-4 border-t border-gray-200">
+            <div className="px-5 py-4" style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb' }}>
               <div className="flex justify-between items-center text-sm">
                 <div>
-                  <p className="font-medium text-gray-800">
+                  <p className="font-medium" style={{ color: '#1f2937' }}>
                     담당: {technicianName || '-'}
                   </p>
-                  <p className="text-gray-500 text-xs">HVAC Mentor System</p>
+                  <p className="text-xs" style={{ color: '#6b7280' }}>HVAC Mentor System</p>
                 </div>
-                <div className="text-right text-gray-500 text-xs">
+                <div className="text-right text-xs" style={{ color: '#6b7280' }}>
                   <p>생성일: {new Date().toLocaleDateString('ko-KR')}</p>
                   <p>hvac-mentor.vercel.app</p>
                 </div>
