@@ -193,9 +193,16 @@ export default function ReportTab({
       const link = document.createElement('a')
       link.download = `HVAC_점검보고서_${equipmentName.replace(/[>\s]/g, '_')}_${inspectionDate}.png`
       link.href = canvas.toDataURL('image/png')
+      link.style.display = 'none'
+      document.body.appendChild(link)
       link.click()
+      document.body.removeChild(link)
+      setShareMessage('이미지 저장 완료!')
+      setTimeout(() => setShareMessage(null), 3000)
     } catch (error) {
       console.error('이미지 생성 실패:', error)
+      setShareMessage('이미지 생성 실패')
+      setTimeout(() => setShareMessage(null), 3000)
     } finally {
       setIsGenerating(false)
     }
@@ -231,11 +238,25 @@ export default function ReportTab({
           })
           setShareMessage('공유 완료!')
         } else {
-          handleSaveImage()
+          // Fallback: download instead of calling handleSaveImage
+          const link = document.createElement('a')
+          link.download = `HVAC_점검보고서_${equipmentName.replace(/[>\s]/g, '_')}_${inspectionDate}.png`
+          link.href = canvas.toDataURL('image/png')
+          link.style.display = 'none'
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
           setShareMessage('공유 미지원 - 이미지 다운로드됨')
         }
       } else {
-        handleSaveImage()
+        // Fallback: download instead of calling handleSaveImage
+        const link = document.createElement('a')
+        link.download = `HVAC_점검보고서_${equipmentName.replace(/[>\s]/g, '_')}_${inspectionDate}.png`
+        link.href = canvas.toDataURL('image/png')
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
         setShareMessage('공유 미지원 - 이미지 다운로드됨')
       }
     } catch (error) {

@@ -57,9 +57,9 @@ export const EQUIPMENT_CATEGORIES: TopCategory[] = [
         id: 'walk-in-refrigerator',
         name: '워크인냉장고',
         subcategories: [
-          { id: 'walkin-small', name: '소형' },
-          { id: 'walkin-medium', name: '중형' },
-          { id: 'walkin-large', name: '대형' }
+          { id: 'walkin-small', name: '소형 [1마력 이하]' },
+          { id: 'walkin-medium', name: '중형 [3마력 이하]' },
+          { id: 'walkin-large', name: '대형 [5마력 이상]' }
         ]
       },
       {
@@ -89,9 +89,9 @@ export const EQUIPMENT_CATEGORIES: TopCategory[] = [
         id: 'walk-in-freezer',
         name: '워크인냉동고',
         subcategories: [
-          { id: 'wif-small', name: '소형' },
-          { id: 'wif-medium', name: '중형' },
-          { id: 'wif-large', name: '대형' }
+          { id: 'wif-small', name: '소형 [1마력 이하]' },
+          { id: 'wif-medium', name: '중형 [3마력 이하]' },
+          { id: 'wif-large', name: '대형 [5마력 이상]' }
         ]
       },
       {
@@ -159,9 +159,9 @@ export const EQUIPMENT_CATEGORIES: TopCategory[] = [
         id: 'cube-ice',
         name: '큐브제빙기',
         subcategories: [
-          { id: 'cube-small', name: '소형' },
-          { id: 'cube-medium', name: '중형' },
-          { id: 'cube-large', name: '대형' }
+          { id: 'cube-small', name: '소형 [1마력 이하]' },
+          { id: 'cube-medium', name: '중형 [3마력 이하]' },
+          { id: 'cube-large', name: '대형 [5마력 이상]' }
         ]
       },
       {
