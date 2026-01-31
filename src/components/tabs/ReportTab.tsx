@@ -1,6 +1,24 @@
 import { useState, useRef } from 'react'
 import html2canvas from 'html2canvas'
-import { FileImage, Share2, ClipboardCheck, Thermometer } from 'lucide-react'
+import {
+  FileImage,
+  Share2,
+  ClipboardCheck,
+  Thermometer,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
+import {
+  EQUIPMENT_CATEGORIES,
+  INSPECTION_ITEMS,
+  INSPECTION_CATEGORIES,
+  ISSUE_PRESETS,
+  RECOMMENDATION_PRESETS,
+  getEquipmentPath,
+  groupInspectionItemsByCategory,
+  type IssuePreset,
+  type RecommendationPreset,
+} from '../../data/equipmentCategories'
 
 interface ReportTabProps {
   refrigerant?: 'R-22' | 'R-404A' | 'R-134a'
@@ -30,6 +48,34 @@ const STATUS_EMOJI: Record<InspectionStatus, string> = {
   '긴급수리': '🚨',
 }
 
+const SEVERITY_COLORS: Record<IssuePreset['severity'], string> = {
+  low: 'bg-gray-100 text-gray-700 border-gray-300',
+  medium: 'bg-yellow-100 text-yellow-800 border-yellow-400',
+  high: 'bg-orange-100 text-orange-800 border-orange-400',
+  critical: 'bg-red-100 text-red-800 border-red-400',
+}
+
+const SEVERITY_DOT_COLORS: Record<IssuePreset['severity'], string> = {
+  low: 'bg-gray-400',
+  medium: 'bg-yellow-500',
+  high: 'bg-orange-500',
+  critical: 'bg-red-500',
+}
+
+const URGENCY_COLORS: Record<RecommendationPreset['urgency'], string> = {
+  immediate: 'bg-red-100 text-red-800 border-red-300',
+  soon: 'bg-orange-100 text-orange-800 border-orange-300',
+  scheduled: 'bg-blue-100 text-blue-800 border-blue-300',
+  monitor: 'bg-gray-100 text-gray-700 border-gray-300',
+}
+
+const URGENCY_LABELS: Record<RecommendationPreset['urgency'], string> = {
+  immediate: '즉시',
+  soon: '조속히',
+  scheduled: '정기',
+  monitor: '관찰',
+}
+
 export default function ReportTab({
   refrigerant,
   facilityType,
@@ -39,8 +85,13 @@ export default function ReportTab({
 }: ReportTabProps) {
   const reportCardRef = useRef<HTMLDivElement>(null)
 
-  // Form state
-  const [equipmentName, setEquipmentName] = useState('')
+  // Equipment selection state
+  const [topCategory, setTopCategory] = useState('')
+  const [middleCategory, setMiddleCategory] = useState('')
+  const [subCategory, setSubCategory] = useState('')
+  const [modelCapacity, setModelCapacity] = useState('')
+
+  // Basic info state
   const [inspectionDate, setInspectionDate] = useState(
     new Date().toISOString().split('T')[0]
   )
@@ -49,14 +100,82 @@ export default function ReportTab({
   const [location, setLocation] = useState('')
   const [status, setStatus] = useState<InspectionStatus>('정상운전')
   const [remarks, setRemarks] = useState('')
-  const [recommendations, setRecommendations] = useState('')
+
+  // Checklist state
+  const [checkedInspectionItems, setCheckedInspectionItems] = useState<Set<string>>(new Set())
+  const [selectedIssues, setSelectedIssues] = useState<Set<string>>(new Set())
+  const [selectedRecommendations, setSelectedRecommendations] = useState<Set<string>>(new Set())
+
+  // Collapsible sections state
+  const [inspectionOpen, setInspectionOpen] = useState(false)
+  const [issuesOpen, setIssuesOpen] = useState(false)
+  const [recommendationsOpen, setRecommendationsOpen] = useState(false)
 
   // UI state
   const [isGenerating, setIsGenerating] = useState(false)
   const [shareMessage, setShareMessage] = useState<string | null>(null)
 
+  // Derived data
+  const selectedTop = EQUIPMENT_CATEGORIES.find((c) => c.id === topCategory)
+  const middleOptions = selectedTop?.middle || []
+  const selectedMiddle = middleOptions.find((m) => m.id === middleCategory)
+  const subOptions = selectedMiddle?.subcategories || []
+  const groupedInspectionItems = groupInspectionItemsByCategory()
+
   // Validation
-  const isFormValid = equipmentName.trim() && inspectionDate && technicianName.trim()
+  const isFormValid = topCategory && middleCategory && inspectionDate && technicianName.trim()
+
+  // Equipment path for display
+  const equipmentPath = getEquipmentPath(topCategory, middleCategory, subCategory)
+
+  // Handle category changes
+  const handleTopCategoryChange = (value: string) => {
+    setTopCategory(value)
+    setMiddleCategory('')
+    setSubCategory('')
+  }
+
+  const handleMiddleCategoryChange = (value: string) => {
+    setMiddleCategory(value)
+    setSubCategory('')
+  }
+
+  // Toggle functions
+  const toggleInspectionItem = (id: string) => {
+    setCheckedInspectionItems((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleIssue = (id: string) => {
+    setSelectedIssues((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleRecommendation = (id: string) => {
+    setSelectedRecommendations((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
   const handleSaveImage = async () => {
     if (!reportCardRef.current || !isFormValid) return
@@ -70,8 +189,9 @@ export default function ReportTab({
         useCORS: true,
       })
 
+      const equipmentName = equipmentPath || '장비'
       const link = document.createElement('a')
-      link.download = `HVAC_점검보고서_${equipmentName}_${inspectionDate}.png`
+      link.download = `HVAC_점검보고서_${equipmentName.replace(/[>\s]/g, '_')}_${inspectionDate}.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
     } catch (error) {
@@ -97,8 +217,9 @@ export default function ReportTab({
         canvas.toBlob(resolve, 'image/png')
       )
 
+      const equipmentName = equipmentPath || '장비'
       if (blob && navigator.share && navigator.canShare) {
-        const file = new File([blob], `HVAC_점검보고서_${equipmentName}.png`, {
+        const file = new File([blob], `HVAC_점검보고서_${equipmentName.replace(/[>\s]/g, '_')}.png`, {
           type: 'image/png',
         })
 
@@ -110,12 +231,10 @@ export default function ReportTab({
           })
           setShareMessage('공유 완료!')
         } else {
-          // Fallback: download
           handleSaveImage()
           setShareMessage('공유 미지원 - 이미지 다운로드됨')
         }
       } else {
-        // Fallback: download
         handleSaveImage()
         setShareMessage('공유 미지원 - 이미지 다운로드됨')
       }
@@ -139,30 +258,26 @@ export default function ReportTab({
     })
   }
 
+  // Get selected items for display
+  const getSelectedIssueItems = () =>
+    ISSUE_PRESETS.filter((i) => selectedIssues.has(i.id))
+
+  const getSelectedRecommendationItems = () =>
+    RECOMMENDATION_PRESETS.filter((r) => selectedRecommendations.has(r.id))
+
+  const getCheckedInspectionItemNames = () =>
+    INSPECTION_ITEMS.filter((i) => checkedInspectionItems.has(i.id)).map((i) => i.name)
+
   return (
     <div className="space-y-6">
-      {/* Input Form Section */}
+      {/* Section 1: Basic Info */}
       <div className="card">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
           <ClipboardCheck className="text-indigo-600" size={24} />
-          점검 정보 입력
+          섹션 1: 기본 정보
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Required fields */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              장비명/모델 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={equipmentName}
-              onChange={(e) => setEquipmentName(e.target.value)}
-              placeholder="예: 냉장 쇼케이스 SC-500"
-              className="input-field"
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               점검일 <span className="text-red-500">*</span>
@@ -201,7 +316,7 @@ export default function ReportTab({
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               설치 장소
             </label>
@@ -213,73 +328,279 @@ export default function ReportTab({
               className="input-field"
             />
           </div>
+        </div>
+      </div>
 
-          {/* Status Radio */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              점검 결과
+      {/* Section 2: Equipment Selection */}
+      <div className="card">
+        <h3 className="text-lg font-bold mb-4">섹션 2: 장비 선택</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              대분류 <span className="text-red-500">*</span>
             </label>
-            <div className="flex flex-wrap gap-4">
-              {(Object.keys(STATUS_COLORS) as InspectionStatus[]).map((s) => (
+            <select
+              value={topCategory}
+              onChange={(e) => handleTopCategoryChange(e.target.value)}
+              className="input-field"
+            >
+              <option value="">선택하세요</option>
+              {EQUIPMENT_CATEGORIES.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              중분류 <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={middleCategory}
+              onChange={(e) => handleMiddleCategoryChange(e.target.value)}
+              className="input-field"
+              disabled={!topCategory}
+            >
+              <option value="">선택하세요</option>
+              {middleOptions.map((mid) => (
+                <option key={mid.id} value={mid.id}>
+                  {mid.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              소분류
+            </label>
+            <select
+              value={subCategory}
+              onChange={(e) => setSubCategory(e.target.value)}
+              className="input-field"
+              disabled={!middleCategory}
+            >
+              <option value="">선택하세요</option>
+              {subOptions.map((sub) => (
+                <option key={sub.id} value={sub.id}>
+                  {sub.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            모델명/용량 (추가 정보)
+          </label>
+          <input
+            type="text"
+            value={modelCapacity}
+            onChange={(e) => setModelCapacity(e.target.value)}
+            placeholder="예: SC-500 / 3HP"
+            className="input-field"
+          />
+        </div>
+
+        {equipmentPath && (
+          <div className="mt-3 p-3 bg-indigo-50 rounded-lg">
+            <span className="text-sm text-indigo-700 font-medium">
+              선택된 장비: {equipmentPath}
+              {modelCapacity && ` (${modelCapacity})`}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Section 3: Inspection Result */}
+      <div className="card">
+        <h3 className="text-lg font-bold mb-4">섹션 3: 점검 결과</h3>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            전체 상태
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {(Object.keys(STATUS_COLORS) as InspectionStatus[]).map((s) => (
+              <label
+                key={s}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
+                  status === s
+                    ? `${STATUS_COLORS[s].bg} ${STATUS_COLORS[s].border}`
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="status"
+                  value={s}
+                  checked={status === s}
+                  onChange={() => setStatus(s)}
+                  className="sr-only"
+                />
+                <span>{STATUS_EMOJI[s]}</span>
+                <span className={status === s ? STATUS_COLORS[s].text : 'text-gray-700'}>
+                  {s}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Section 4: Inspection Items (Collapsible) */}
+      <div className="card">
+        <button
+          onClick={() => setInspectionOpen(!inspectionOpen)}
+          className="w-full flex items-center justify-between text-lg font-bold"
+        >
+          <span>섹션 4: 점검 항목 ({checkedInspectionItems.size}개 선택)</span>
+          {inspectionOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+        </button>
+
+        {inspectionOpen && (
+          <div className="mt-4 space-y-4">
+            {Object.entries(groupedInspectionItems).map(([categoryKey, items]) => (
+              <div key={categoryKey}>
+                <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                  {INSPECTION_CATEGORIES[categoryKey as keyof typeof INSPECTION_CATEGORIES]}
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {items.map((item) => (
+                    <label
+                      key={item.id}
+                      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
+                        checkedInspectionItems.has(item.id)
+                          ? 'bg-indigo-50 border-indigo-300'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checkedInspectionItems.has(item.id)}
+                        onChange={() => toggleInspectionItem(item.id)}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                      />
+                      <span className="text-sm">{item.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Section 5: Issues (Collapsible) */}
+      <div className="card">
+        <button
+          onClick={() => setIssuesOpen(!issuesOpen)}
+          className="w-full flex items-center justify-between text-lg font-bold"
+        >
+          <span>섹션 5: 발견된 문제 ({selectedIssues.size}개 선택)</span>
+          {issuesOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+        </button>
+
+        {issuesOpen && (
+          <div className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {ISSUE_PRESETS.map((issue) => (
                 <label
-                  key={s}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
-                    status === s
-                      ? `${STATUS_COLORS[s].bg} ${STATUS_COLORS[s].border}`
+                  key={issue.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    selectedIssues.has(issue.id)
+                      ? SEVERITY_COLORS[issue.severity]
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <input
-                    type="radio"
-                    name="status"
-                    value={s}
-                    checked={status === s}
-                    onChange={() => setStatus(s)}
-                    className="sr-only"
+                    type="checkbox"
+                    checked={selectedIssues.has(issue.id)}
+                    onChange={() => toggleIssue(issue.id)}
+                    className="w-4 h-4 rounded focus:ring-indigo-500"
                   />
-                  <span>{STATUS_EMOJI[s]}</span>
-                  <span className={status === s ? STATUS_COLORS[s].text : 'text-gray-700'}>
-                    {s}
+                  <span
+                    className={`w-2 h-2 rounded-full ${SEVERITY_DOT_COLORS[issue.severity]}`}
+                  />
+                  <span className="text-sm flex-1">{issue.name}</span>
+                  <span className="text-xs opacity-70">
+                    {issue.severity === 'low' && '낮음'}
+                    {issue.severity === 'medium' && '보통'}
+                    {issue.severity === 'high' && '높음'}
+                    {issue.severity === 'critical' && '긴급'}
                   </span>
                 </label>
               ))}
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Remarks */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              특이사항{' '}
-              <span className="text-gray-400 text-xs">({remarks.length}/200)</span>
-            </label>
-            <textarea
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value.slice(0, 200))}
-              placeholder="점검 중 발견된 특이사항을 기록하세요"
-              rows={3}
-              className="input-field resize-none"
-            />
-          </div>
+      {/* Section 6: Recommendations (Collapsible) */}
+      <div className="card">
+        <button
+          onClick={() => setRecommendationsOpen(!recommendationsOpen)}
+          className="w-full flex items-center justify-between text-lg font-bold"
+        >
+          <span>섹션 6: 권장사항 ({selectedRecommendations.size}개 선택)</span>
+          {recommendationsOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+        </button>
 
-          {/* Recommendations */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              권장사항{' '}
-              <span className="text-gray-400 text-xs">({recommendations.length}/200)</span>
-            </label>
-            <textarea
-              value={recommendations}
-              onChange={(e) => setRecommendations(e.target.value.slice(0, 200))}
-              placeholder="고객에게 권장하는 조치사항을 기록하세요"
-              rows={3}
-              className="input-field resize-none"
-            />
+        {recommendationsOpen && (
+          <div className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {RECOMMENDATION_PRESETS.map((rec) => (
+                <label
+                  key={rec.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    selectedRecommendations.has(rec.id)
+                      ? URGENCY_COLORS[rec.urgency]
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedRecommendations.has(rec.id)}
+                    onChange={() => toggleRecommendation(rec.id)}
+                    className="w-4 h-4 rounded focus:ring-indigo-500"
+                  />
+                  <span className="text-sm flex-1">{rec.name}</span>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded ${URGENCY_COLORS[rec.urgency]}`}
+                  >
+                    {URGENCY_LABELS[rec.urgency]}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
+        )}
+      </div>
+
+      {/* Section 7: Remarks */}
+      <div className="card">
+        <h3 className="text-lg font-bold mb-4">섹션 7: 비고</h3>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            추가 메모 <span className="text-gray-400 text-xs">({remarks.length}/200)</span>
+          </label>
+          <textarea
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value.slice(0, 200))}
+            placeholder="점검 중 발견된 추가 사항을 기록하세요"
+            rows={3}
+            className="input-field resize-none"
+          />
         </div>
 
         {!isFormValid && (
           <p className="mt-4 text-sm text-orange-600">
-            * 표시된 필수 항목을 모두 입력해주세요
+            * 표시된 필수 항목을 모두 입력해주세요 (점검일, 기술자명, 대분류, 중분류)
           </p>
         )}
       </div>
@@ -322,9 +643,14 @@ export default function ReportTab({
                     {inspectionDate ? formatDate(inspectionDate) : '-'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">장비명</span>
-                  <span className="font-medium">{equipmentName || '-'}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500 text-sm">장비</span>
+                  <span className="font-medium text-right max-w-[250px]">
+                    {equipmentPath || '-'}
+                    {modelCapacity && (
+                      <span className="block text-xs text-gray-500">{modelCapacity}</span>
+                    )}
+                  </span>
                 </div>
                 {location && (
                   <div className="flex justify-between">
@@ -388,6 +714,26 @@ export default function ReportTab({
                 </>
               )}
 
+              {/* Inspection Items */}
+              {checkedInspectionItems.size > 0 && (
+                <>
+                  <hr className="border-gray-200" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-2">점검 항목</p>
+                    <div className="flex flex-wrap gap-1">
+                      {getCheckedInspectionItemNames().map((name, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded"
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
               {/* Diagnosis Issues (if available) */}
               {diagnosisResult && diagnosisResult.issues.length > 0 && (
                 <>
@@ -406,27 +752,59 @@ export default function ReportTab({
                 </>
               )}
 
+              {/* Selected Issues */}
+              {selectedIssues.size > 0 && (
+                <>
+                  <hr className="border-gray-200" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-2">발견된 문제</p>
+                    <ul className="text-sm space-y-1">
+                      {getSelectedIssueItems().map((issue) => (
+                        <li key={issue.id} className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${SEVERITY_DOT_COLORS[issue.severity]}`}
+                          />
+                          <span>{issue.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
+
+              {/* Selected Recommendations */}
+              {selectedRecommendations.size > 0 && (
+                <>
+                  <hr className="border-gray-200" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-2">권장사항</p>
+                    <ul className="text-sm space-y-1">
+                      {getSelectedRecommendationItems().map((rec) => (
+                        <li key={rec.id} className="flex items-center gap-2">
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded ${URGENCY_COLORS[rec.urgency]}`}
+                          >
+                            {URGENCY_LABELS[rec.urgency]}
+                          </span>
+                          <span>{rec.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
+
               {/* Remarks */}
               {remarks && (
                 <>
                   <hr className="border-gray-200" />
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">특이사항</p>
+                    <p className="text-sm font-medium text-gray-600 mb-1">비고</p>
                     <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
                       {remarks}
                     </p>
                   </div>
                 </>
-              )}
-
-              {/* Recommendations */}
-              {recommendations && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">권장사항</p>
-                  <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">
-                    {recommendations}
-                  </p>
-                </div>
               )}
             </div>
 
