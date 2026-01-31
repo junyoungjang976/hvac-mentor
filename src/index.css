@@ -51,3 +51,10 @@ body {
 .input-field {
   @apply w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors;
 }
+
+.safe-area-top {
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+.safe-area-bottom {
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
