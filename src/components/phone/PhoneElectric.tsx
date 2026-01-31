@@ -1,14 +1,21 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Zap, BookOpen, Wrench, Search, HelpCircle, AlertTriangle } from 'lucide-react'
-import { CIRCUIT_SYMBOLS, CIRCUIT_READING_GUIDE, MEASUREMENT_TOOLS_GUIDE, type MeasurementTool } from '../../data/circuitLearning'
+import { ChevronDown, ChevronUp, Zap, BookOpen, Wrench, Search, HelpCircle, AlertTriangle, GraduationCap } from 'lucide-react'
+import { CIRCUIT_SYMBOLS, CIRCUIT_READING_GUIDE, MEASUREMENT_TOOLS_GUIDE, CIRCUIT_QUIZ, type MeasurementTool, type QuizQuestion } from '../../data/circuitLearning'
 import { ELECTRICAL_COMPONENTS, FAULT_DIAGNOSIS_POINTS, ELECTRICAL_SAFETY_RULES } from '../../data/electricCircuit'
 
-type SubSection = 'symbols' | 'diagrams' | 'components' | 'diagnosis' | 'tools' | 'safety'
+type SubSection = 'symbols' | 'diagrams' | 'components' | 'diagnosis' | 'tools' | 'safety' | 'quiz'
 
 export default function PhoneElectric() {
   const [activeSection, setActiveSection] = useState<SubSection>('symbols')
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+
+  // Quiz state
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
+  const [showResult, setShowResult] = useState(false)
+  const [correctCount, setCorrectCount] = useState(0)
+  const [quizCompleted, setQuizCompleted] = useState(false)
 
   const sections = [
     { id: 'symbols' as const, label: '기호', icon: BookOpen },
@@ -17,7 +24,41 @@ export default function PhoneElectric() {
     { id: 'diagnosis' as const, label: '진단', icon: Wrench },
     { id: 'tools' as const, label: '측정', icon: HelpCircle },
     { id: 'safety' as const, label: '안전', icon: AlertTriangle },
+    { id: 'quiz' as const, label: '퀴즈', icon: GraduationCap },
   ]
+
+  const currentQuestion: QuizQuestion = CIRCUIT_QUIZ[currentQuestionIndex]
+
+  const handleAnswerSelect = (index: number) => {
+    if (showResult) return
+    setSelectedAnswer(index)
+  }
+
+  const handleSubmitAnswer = () => {
+    if (selectedAnswer === null) return
+    setShowResult(true)
+    if (selectedAnswer === currentQuestion.correctIndex) {
+      setCorrectCount(prev => prev + 1)
+    }
+  }
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < CIRCUIT_QUIZ.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1)
+      setSelectedAnswer(null)
+      setShowResult(false)
+    } else {
+      setQuizCompleted(true)
+    }
+  }
+
+  const handleRestartQuiz = () => {
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer(null)
+    setShowResult(false)
+    setCorrectCount(0)
+    setQuizCompleted(false)
+  }
 
   const filteredComponents = Object.entries(ELECTRICAL_COMPONENTS).filter(([code, comp]) =>
     code.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -397,6 +438,157 @@ export default function PhoneElectric() {
                 <li>☑️ 2인 1조 작업 권장</li>
               </ul>
             </div>
+          </div>
+        )}
+
+        {/* Quiz Section */}
+        {activeSection === 'quiz' && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-2">🎓 회로 퀴즈</h3>
+
+            {quizCompleted ? (
+              // Quiz Result Screen
+              <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                <div className="text-6xl mb-4">
+                  {correctCount >= CIRCUIT_QUIZ.length * 0.8 ? '🏆' :
+                   correctCount >= CIRCUIT_QUIZ.length * 0.5 ? '👍' : '📚'}
+                </div>
+                <h4 className="text-xl font-bold text-slate-800 mb-2">퀴즈 완료!</h4>
+                <p className="text-3xl font-bold text-indigo-600 mb-2">
+                  {correctCount} / {CIRCUIT_QUIZ.length}
+                </p>
+                <p className="text-slate-600 mb-4">
+                  {correctCount >= CIRCUIT_QUIZ.length * 0.8
+                    ? '훌륭합니다! 회로 지식이 탄탄하네요!'
+                    : correctCount >= CIRCUIT_QUIZ.length * 0.5
+                    ? '잘했어요! 조금만 더 공부하면 완벽해요!'
+                    : '다시 한번 학습해보세요!'}
+                </p>
+                <button
+                  onClick={handleRestartQuiz}
+                  className="w-full py-3 bg-indigo-500 text-white rounded-xl font-bold"
+                >
+                  다시 풀기
+                </button>
+              </div>
+            ) : (
+              // Quiz Question Screen
+              <div className="space-y-4">
+                {/* Progress */}
+                <div className="bg-white rounded-xl p-4 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-slate-500">진행률</span>
+                    <span className="text-sm font-bold text-indigo-600">
+                      {currentQuestionIndex + 1} / {CIRCUIT_QUIZ.length}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-500 transition-all"
+                      style={{ width: `${((currentQuestionIndex + 1) / CIRCUIT_QUIZ.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Question */}
+                <div className="bg-white rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      currentQuestion.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
+                      currentQuestion.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {currentQuestion.difficulty === 'beginner' ? '초급' :
+                       currentQuestion.difficulty === 'intermediate' ? '중급' : '고급'}
+                    </span>
+                  </div>
+                  <p className="font-bold text-slate-800 text-lg leading-relaxed">
+                    {currentQuestion.question}
+                  </p>
+                </div>
+
+                {/* Options */}
+                <div className="space-y-2">
+                  {currentQuestion.options.map((option, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleAnswerSelect(index)}
+                      disabled={showResult}
+                      className={`w-full p-4 rounded-xl text-left transition-all ${
+                        showResult
+                          ? index === currentQuestion.correctIndex
+                            ? 'bg-green-100 border-2 border-green-500'
+                            : index === selectedAnswer
+                            ? 'bg-red-100 border-2 border-red-500'
+                            : 'bg-slate-50 border-2 border-transparent'
+                          : selectedAnswer === index
+                          ? 'bg-indigo-100 border-2 border-indigo-500'
+                          : 'bg-white border-2 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          showResult
+                            ? index === currentQuestion.correctIndex
+                              ? 'bg-green-500 text-white'
+                              : index === selectedAnswer
+                              ? 'bg-red-500 text-white'
+                              : 'bg-slate-200 text-slate-600'
+                            : selectedAnswer === index
+                            ? 'bg-indigo-500 text-white'
+                            : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {index + 1}
+                        </span>
+                        <span className={`font-medium ${
+                          showResult && index === currentQuestion.correctIndex ? 'text-green-800' :
+                          showResult && index === selectedAnswer ? 'text-red-800' :
+                          'text-slate-700'
+                        }`}>
+                          {option}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Explanation */}
+                {showResult && (
+                  <div className={`p-4 rounded-xl ${
+                    selectedAnswer === currentQuestion.correctIndex
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-blue-50 border border-blue-200'
+                  }`}>
+                    <p className="font-bold mb-2">
+                      {selectedAnswer === currentQuestion.correctIndex ? '✅ 정답!' : '❌ 오답'}
+                    </p>
+                    <p className="text-sm text-slate-700">{currentQuestion.explanation}</p>
+                  </div>
+                )}
+
+                {/* Action Button */}
+                {!showResult ? (
+                  <button
+                    onClick={handleSubmitAnswer}
+                    disabled={selectedAnswer === null}
+                    className={`w-full py-4 rounded-xl font-bold text-lg ${
+                      selectedAnswer === null
+                        ? 'bg-slate-200 text-slate-400'
+                        : 'bg-indigo-500 text-white'
+                    }`}
+                  >
+                    정답 확인
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleNextQuestion}
+                    className="w-full py-4 bg-indigo-500 text-white rounded-xl font-bold text-lg"
+                  >
+                    {currentQuestionIndex < CIRCUIT_QUIZ.length - 1 ? '다음 문제' : '결과 보기'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
