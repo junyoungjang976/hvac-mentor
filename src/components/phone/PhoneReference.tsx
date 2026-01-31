@@ -1,19 +1,65 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, BookOpen, AlertTriangle, CheckSquare, Syringe, Zap } from 'lucide-react'
+import { ChevronDown, ChevronUp, BookOpen, AlertTriangle, CheckSquare, Syringe, GraduationCap } from 'lucide-react'
 import { FAULT_PATTERNS } from '../../data/faultPatterns'
 import { EMERGENCY_MANUAL } from '../../data/emergency'
 import { CHECKLIST } from '../../data/checklist'
 import { CHARGING_GUIDE } from '../../data/chargingGuide'
+import { REFRIGERATION_QUIZ, shuffleQuizArray, type RefrigerationQuizQuestion } from '../../data/refrigerationQuiz'
 
-type SectionId = 'faults' | 'emergency' | 'checklist' | 'charging' | 'electric'
+type SectionId = 'faults' | 'emergency' | 'checklist' | 'charging' | 'quiz'
 
 export default function PhoneReference() {
   const [openSection, setOpenSection] = useState<SectionId | null>('faults')
   const [openItem, setOpenItem] = useState<string | null>(null)
 
+  // Quiz state
+  const QUIZ_SIZE = 5
+  const [quizQuestions, setQuizQuestions] = useState<RefrigerationQuizQuestion[]>(() =>
+    shuffleQuizArray([...REFRIGERATION_QUIZ]).slice(0, QUIZ_SIZE)
+  )
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
+  const [showResult, setShowResult] = useState(false)
+  const [correctCount, setCorrectCount] = useState(0)
+  const [quizCompleted, setQuizCompleted] = useState(false)
+
+  const currentQuestion = quizQuestions[currentQuestionIndex]
+
   const toggleSection = (id: SectionId) => {
     setOpenSection(openSection === id ? null : id)
     setOpenItem(null)
+  }
+
+  const handleAnswerSelect = (index: number) => {
+    if (showResult) return
+    setSelectedAnswer(index)
+  }
+
+  const handleSubmitAnswer = () => {
+    if (selectedAnswer === null) return
+    setShowResult(true)
+    if (selectedAnswer === currentQuestion.correctIndex) {
+      setCorrectCount(prev => prev + 1)
+    }
+  }
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < quizQuestions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1)
+      setSelectedAnswer(null)
+      setShowResult(false)
+    } else {
+      setQuizCompleted(true)
+    }
+  }
+
+  const handleRestartQuiz = () => {
+    setQuizQuestions(shuffleQuizArray([...REFRIGERATION_QUIZ]).slice(0, QUIZ_SIZE))
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer(null)
+    setShowResult(false)
+    setCorrectCount(0)
+    setQuizCompleted(false)
   }
 
   const sections = [
@@ -21,7 +67,7 @@ export default function PhoneReference() {
     { id: 'emergency' as const, label: '비상 대응', icon: AlertTriangle, color: 'text-red-600' },
     { id: 'checklist' as const, label: '체크리스트', icon: CheckSquare, color: 'text-green-600' },
     { id: 'charging' as const, label: '충전 가이드', icon: Syringe, color: 'text-purple-600' },
-    { id: 'electric' as const, label: '전기 회로', icon: Zap, color: 'text-yellow-600' },
+    { id: 'quiz' as const, label: '냉동 퀴즈', icon: GraduationCap, color: 'text-indigo-600' },
   ]
 
   return (
@@ -157,16 +203,143 @@ export default function PhoneReference() {
                 </div>
               )}
 
-              {/* Electric */}
-              {section.id === 'electric' && (
-                <div className="text-center py-4">
-                  <p className="text-slate-500 text-sm">전기 회로 정보는 태블릿 모드에서 더 자세히 확인할 수 있습니다.</p>
-                  <a href="/circuits/walk-in-diagram-1.jpg" target="_blank" className="inline-block mt-3 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-sm">
-                    📷 회로도 1 보기
-                  </a>
-                  <a href="/circuits/walk-in-diagram-2.jpg" target="_blank" className="inline-block mt-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-sm ml-2">
-                    📷 회로도 2 보기
-                  </a>
+              {/* Refrigeration Quiz */}
+              {section.id === 'quiz' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">
+                    총 {REFRIGERATION_QUIZ.length}문제 중 {QUIZ_SIZE}문제가 랜덤 출제됩니다
+                  </p>
+
+                  {quizCompleted ? (
+                    // Quiz Result
+                    <div className="bg-slate-50 rounded-xl p-6 text-center">
+                      <div className="text-5xl mb-3">
+                        {correctCount >= quizQuestions.length * 0.8 ? '🏆' :
+                         correctCount >= quizQuestions.length * 0.5 ? '👍' : '📚'}
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-800 mb-2">퀴즈 완료!</h4>
+                      <p className="text-2xl font-bold text-indigo-600 mb-2">
+                        {correctCount} / {quizQuestions.length}
+                      </p>
+                      <p className="text-slate-600 text-sm mb-4">
+                        {correctCount >= quizQuestions.length * 0.8
+                          ? '훌륭합니다!'
+                          : correctCount >= quizQuestions.length * 0.5
+                          ? '잘했어요!'
+                          : '다시 학습해보세요!'}
+                      </p>
+                      <button
+                        onClick={handleRestartQuiz}
+                        className="w-full py-3 bg-indigo-500 text-white rounded-xl font-bold"
+                      >
+                        🔄 새 퀴즈 풀기
+                      </button>
+                    </div>
+                  ) : (
+                    // Quiz Question
+                    <div className="space-y-3">
+                      {/* Progress */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 transition-all"
+                            style={{ width: `${((currentQuestionIndex + 1) / quizQuestions.length) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-medium text-slate-500">
+                          {currentQuestionIndex + 1}/{quizQuestions.length}
+                        </span>
+                      </div>
+
+                      {/* Question */}
+                      <div className="bg-slate-50 rounded-xl p-4">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-2 ${
+                          currentQuestion.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
+                          currentQuestion.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {currentQuestion.difficulty === 'beginner' ? '초급' :
+                           currentQuestion.difficulty === 'intermediate' ? '중급' : '고급'}
+                        </span>
+                        <p className="font-bold text-slate-800">{currentQuestion.question}</p>
+                      </div>
+
+                      {/* Options */}
+                      <div className="space-y-2">
+                        {currentQuestion.options.map((option, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleAnswerSelect(index)}
+                            disabled={showResult}
+                            className={`w-full p-3 rounded-xl text-left text-sm transition-all ${
+                              showResult
+                                ? index === currentQuestion.correctIndex
+                                  ? 'bg-green-100 border-2 border-green-500'
+                                  : index === selectedAnswer
+                                  ? 'bg-red-100 border-2 border-red-500'
+                                  : 'bg-white border-2 border-transparent'
+                                : selectedAnswer === index
+                                ? 'bg-indigo-100 border-2 border-indigo-500'
+                                : 'bg-white border-2 border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                showResult
+                                  ? index === currentQuestion.correctIndex
+                                    ? 'bg-green-500 text-white'
+                                    : index === selectedAnswer
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-slate-200 text-slate-600'
+                                  : selectedAnswer === index
+                                  ? 'bg-indigo-500 text-white'
+                                  : 'bg-slate-200 text-slate-600'
+                              }`}>
+                                {index + 1}
+                              </span>
+                              <span className="font-medium">{option}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Explanation */}
+                      {showResult && (
+                        <div className={`p-3 rounded-xl text-sm ${
+                          selectedAnswer === currentQuestion.correctIndex
+                            ? 'bg-green-50 border border-green-200'
+                            : 'bg-blue-50 border border-blue-200'
+                        }`}>
+                          <p className="font-bold mb-1">
+                            {selectedAnswer === currentQuestion.correctIndex ? '✅ 정답!' : '❌ 오답'}
+                          </p>
+                          <p className="text-slate-700">{currentQuestion.explanation}</p>
+                        </div>
+                      )}
+
+                      {/* Action Button */}
+                      {!showResult ? (
+                        <button
+                          onClick={handleSubmitAnswer}
+                          disabled={selectedAnswer === null}
+                          className={`w-full py-3 rounded-xl font-bold ${
+                            selectedAnswer === null
+                              ? 'bg-slate-200 text-slate-400'
+                              : 'bg-indigo-500 text-white'
+                          }`}
+                        >
+                          정답 확인
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleNextQuestion}
+                          className="w-full py-3 bg-indigo-500 text-white rounded-xl font-bold"
+                        >
+                          {currentQuestionIndex < quizQuestions.length - 1 ? '다음 문제' : '결과 보기'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
