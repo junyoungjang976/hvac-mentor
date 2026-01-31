@@ -11,11 +11,25 @@ export default function PhoneElectric() {
   const [searchTerm, setSearchTerm] = useState('')
 
   // Quiz state
+  const QUIZ_SIZE = 5 // 한 번에 5문제씩
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(() =>
+    shuffleArray([...CIRCUIT_QUIZ]).slice(0, QUIZ_SIZE)
+  )
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [correctCount, setCorrectCount] = useState(0)
   const [quizCompleted, setQuizCompleted] = useState(false)
+
+  // 배열 섞기 함수
+  function shuffleArray<T>(array: T[]): T[] {
+    const newArray = [...array]
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]]
+    }
+    return newArray
+  }
 
   const sections = [
     { id: 'symbols' as const, label: '기호', icon: BookOpen },
@@ -27,7 +41,7 @@ export default function PhoneElectric() {
     { id: 'quiz' as const, label: '퀴즈', icon: GraduationCap },
   ]
 
-  const currentQuestion: QuizQuestion = CIRCUIT_QUIZ[currentQuestionIndex]
+  const currentQuestion: QuizQuestion = quizQuestions[currentQuestionIndex]
 
   const handleAnswerSelect = (index: number) => {
     if (showResult) return
@@ -43,7 +57,7 @@ export default function PhoneElectric() {
   }
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < CIRCUIT_QUIZ.length - 1) {
+    if (currentQuestionIndex < quizQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1)
       setSelectedAnswer(null)
       setShowResult(false)
@@ -53,6 +67,8 @@ export default function PhoneElectric() {
   }
 
   const handleRestartQuiz = () => {
+    // 새로운 랜덤 문제 세트 생성
+    setQuizQuestions(shuffleArray([...CIRCUIT_QUIZ]).slice(0, QUIZ_SIZE))
     setCurrentQuestionIndex(0)
     setSelectedAnswer(null)
     setShowResult(false)
@@ -445,31 +461,37 @@ export default function PhoneElectric() {
         {activeSection === 'quiz' && (
           <div className="space-y-4">
             <h3 className="font-bold text-lg text-slate-800 mb-2">🎓 회로 퀴즈</h3>
+            <p className="text-sm text-slate-500 mb-4">
+              총 {CIRCUIT_QUIZ.length}문제 중 {QUIZ_SIZE}문제가 랜덤 출제됩니다
+            </p>
 
             {quizCompleted ? (
               // Quiz Result Screen
               <div className="bg-white rounded-xl p-6 shadow-sm text-center">
                 <div className="text-6xl mb-4">
-                  {correctCount >= CIRCUIT_QUIZ.length * 0.8 ? '🏆' :
-                   correctCount >= CIRCUIT_QUIZ.length * 0.5 ? '👍' : '📚'}
+                  {correctCount >= quizQuestions.length * 0.8 ? '🏆' :
+                   correctCount >= quizQuestions.length * 0.5 ? '👍' : '📚'}
                 </div>
                 <h4 className="text-xl font-bold text-slate-800 mb-2">퀴즈 완료!</h4>
                 <p className="text-3xl font-bold text-indigo-600 mb-2">
-                  {correctCount} / {CIRCUIT_QUIZ.length}
+                  {correctCount} / {quizQuestions.length}
                 </p>
                 <p className="text-slate-600 mb-4">
-                  {correctCount >= CIRCUIT_QUIZ.length * 0.8
+                  {correctCount >= quizQuestions.length * 0.8
                     ? '훌륭합니다! 회로 지식이 탄탄하네요!'
-                    : correctCount >= CIRCUIT_QUIZ.length * 0.5
+                    : correctCount >= quizQuestions.length * 0.5
                     ? '잘했어요! 조금만 더 공부하면 완벽해요!'
                     : '다시 한번 학습해보세요!'}
                 </p>
                 <button
                   onClick={handleRestartQuiz}
-                  className="w-full py-3 bg-indigo-500 text-white rounded-xl font-bold"
+                  className="w-full py-3 bg-indigo-500 text-white rounded-xl font-bold mb-3"
                 >
-                  다시 풀기
+                  🔄 새 퀴즈 풀기
                 </button>
+                <p className="text-xs text-slate-400">
+                  다른 문제가 랜덤으로 출제됩니다
+                </p>
               </div>
             ) : (
               // Quiz Question Screen
@@ -479,13 +501,13 @@ export default function PhoneElectric() {
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-slate-500">진행률</span>
                     <span className="text-sm font-bold text-indigo-600">
-                      {currentQuestionIndex + 1} / {CIRCUIT_QUIZ.length}
+                      {currentQuestionIndex + 1} / {quizQuestions.length}
                     </span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-indigo-500 transition-all"
-                      style={{ width: `${((currentQuestionIndex + 1) / CIRCUIT_QUIZ.length) * 100}%` }}
+                      style={{ width: `${((currentQuestionIndex + 1) / quizQuestions.length) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -584,7 +606,7 @@ export default function PhoneElectric() {
                     onClick={handleNextQuestion}
                     className="w-full py-4 bg-indigo-500 text-white rounded-xl font-bold text-lg"
                   >
-                    {currentQuestionIndex < CIRCUIT_QUIZ.length - 1 ? '다음 문제' : '결과 보기'}
+                    {currentQuestionIndex < quizQuestions.length - 1 ? '다음 문제' : '결과 보기'}
                   </button>
                 )}
               </div>

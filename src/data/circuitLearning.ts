@@ -543,6 +543,174 @@ export const CIRCUIT_QUIZ: QuizQuestion[] = [
     explanation: 'dF(Differential)는 ON 온도와 OFF 온도의 차이입니다. 예: 설정 -20도, dF 2도면 -18도에서 ON, -20도에서 OFF. 차동값이 너무 작으면 잦은 ON/OFF(헌팅)가 발생합니다.',
     difficulty: 'advanced',
     category: 'control'
+  },
+  {
+    id: 'q9',
+    question: 'ELB(누전차단기)가 트립되었습니다. 가장 먼저 해야 할 점검은?',
+    options: [
+      '바로 ELB를 올린다',
+      '메가 테스터로 절연저항을 측정한다',
+      '냉매를 보충한다',
+      '팬 모터를 교체한다'
+    ],
+    correctIndex: 1,
+    explanation: 'ELB 트립은 누전을 의미합니다. 바로 올리면 재트립되거나 위험합니다. 메가 테스터로 압축기, 팬 모터, 히터의 절연저항을 측정하여 누전 부위를 찾아야 합니다.',
+    difficulty: 'intermediate',
+    category: 'troubleshooting'
+  },
+  {
+    id: 'q10',
+    question: '절연저항 측정 시 정상 기준은?',
+    options: [
+      '0.1MΩ 이상',
+      '0.5MΩ 이상',
+      '1MΩ 이상',
+      '10MΩ 이상'
+    ],
+    correctIndex: 2,
+    explanation: '절연저항 정상 기준은 1MΩ 이상입니다. 0.5MΩ 미만이면 누전 의심, 0.1MΩ 미만이면 심각한 절연 불량으로 즉시 교체가 필요합니다.',
+    difficulty: 'beginner',
+    category: 'measurement'
+  },
+  {
+    id: 'q11',
+    question: '클램프 미터로 전류 측정 시 0A가 표시됩니다. 원인은?',
+    options: [
+      '회로에 전류가 흐르지 않는다',
+      '클램프에 전선 2개를 함께 끼웠다',
+      '위 두 가지 모두 가능',
+      '클램프 미터가 고장났다'
+    ],
+    correctIndex: 2,
+    explanation: '전선 2개를 함께 끼우면 왕복 전류가 상쇄되어 0A로 표시됩니다. 반드시 전선 1개만 끼워야 합니다. 물론 실제로 전류가 없을 수도 있습니다.',
+    difficulty: 'beginner',
+    category: 'measurement'
+  },
+  {
+    id: 'q12',
+    question: 'F.HPC(팬 고압 차단스위치)의 역할은?',
+    options: [
+      '압축기를 정지시킨다',
+      '응축기 팬을 강제 기동시킨다',
+      '제상 히터를 켠다',
+      '저압을 감지한다'
+    ],
+    correctIndex: 1,
+    explanation: 'F.HPC는 응축 압력이 설정값(보통 14kg/cm²) 이상이 되면 응축기 팬을 추가로 기동시켜 응축 능력을 높입니다. 압축기 정지는 DPS의 HP 역할입니다.',
+    difficulty: 'intermediate',
+    category: 'components'
+  },
+  {
+    id: 'q13',
+    question: 'NFB가 자주 트립됩니다. 원인으로 가장 적절한 것은?',
+    options: [
+      '온도 설정이 너무 낮다',
+      '단락(쇼트) 또는 과전류',
+      '냉매가 부족하다',
+      '필터가 막혔다'
+    ],
+    correctIndex: 1,
+    explanation: 'NFB는 과전류 및 단락 시 트립됩니다. 배선 단락, 모터 소손, 또는 NFB 용량 부족이 원인일 수 있습니다. 온도나 냉매와는 직접 관계없습니다.',
+    difficulty: 'intermediate',
+    category: 'troubleshooting'
+  },
+  {
+    id: 'q14',
+    question: '52C와 MC의 차이점은?',
+    options: [
+      '52C는 압축기용, MC는 팬용이다',
+      '기능은 같고 표기만 다르다',
+      '52C는 단상용, MC는 3상용이다',
+      '52C는 수동, MC는 자동이다'
+    ],
+    correctIndex: 1,
+    explanation: '52C(Compressor Contactor)와 MC(Magnetic Contactor)는 기능이 동일한 전자접촉기입니다. 52는 ANSI 기기번호로 접촉기를 의미하고, C는 압축기를 나타냅니다.',
+    difficulty: 'beginner',
+    category: 'components'
+  },
+  {
+    id: 'q15',
+    question: '제상 히터(DH) 저항이 무한대로 측정됩니다. 의미는?',
+    options: [
+      '히터가 정상이다',
+      '히터 용량이 크다',
+      '히터 단선(끊어짐)이다',
+      '히터가 과열 상태다'
+    ],
+    correctIndex: 2,
+    explanation: '저항이 무한대(OL)면 회로가 끊어진 것입니다. 히터 내부 발열선이 단선된 것이므로 히터 교체가 필요합니다.',
+    difficulty: 'beginner',
+    category: 'measurement'
+  },
+  {
+    id: 'q16',
+    question: 'DTS(제상종료스위치)의 동작 온도는 보통 몇 도인가요?',
+    options: [
+      '-10 ~ -5°C',
+      '0 ~ 5°C',
+      '+10 ~ +15°C',
+      '+25 ~ +30°C'
+    ],
+    correctIndex: 2,
+    explanation: 'DTS는 증발기 표면 온도가 +10~15°C에 도달하면 제상 종료 신호를 보냅니다. 성에가 완전히 녹았음을 의미합니다.',
+    difficulty: 'intermediate',
+    category: 'defrost'
+  },
+  {
+    id: 'q17',
+    question: '압축기 운전 전류가 정격의 150%입니다. 원인이 아닌 것은?',
+    options: [
+      '고압 과다 (응축기 오염)',
+      '냉매 과충전',
+      '전압 저하',
+      '냉매 부족'
+    ],
+    correctIndex: 3,
+    explanation: '냉매 부족 시에는 오히려 운전 전류가 낮아집니다. 고압 상승, 냉매 과충전, 전압 저하 등은 모두 전류 증가의 원인이 됩니다.',
+    difficulty: 'advanced',
+    category: 'troubleshooting'
+  },
+  {
+    id: 'q18',
+    question: '메가 테스터 측정 전 반드시 해야 할 것은?',
+    options: [
+      '압축기 기동',
+      '전자부품(TIC, DPS) 분리',
+      '냉매 회수',
+      '팬 모터 분리'
+    ],
+    correctIndex: 1,
+    explanation: '메가 테스터는 500V 이상의 고전압을 인가합니다. TIC, DPS 등 전자부품이 연결된 상태로 측정하면 부품이 파손됩니다.',
+    difficulty: 'intermediate',
+    category: 'measurement'
+  },
+  {
+    id: 'q19',
+    question: 'PB(푸시버튼)의 주요 용도는?',
+    options: [
+      '압축기 기동',
+      'THR 수동 리셋',
+      '온도 조절',
+      '제상 시작'
+    ],
+    correctIndex: 1,
+    explanation: 'PB는 주로 THR 트립 후 수동 리셋용으로 사용됩니다. THR이 트립되면 빨간 버튼이 돌출되고, 냉각 후 PB를 눌러 리셋합니다.',
+    difficulty: 'beginner',
+    category: 'components'
+  },
+  {
+    id: 'q20',
+    question: '회로도에서 점선으로 표시된 연결의 의미는?',
+    options: [
+      '고전압 회로',
+      '접지선',
+      '기계적 연동 또는 관련 부품',
+      '임시 연결'
+    ],
+    correctIndex: 2,
+    explanation: '점선은 주로 기계적 연동(하나의 릴레이의 여러 접점)이나 관련 부품 그룹을 나타냅니다. 예: MC의 주접점과 보조접점 연결.',
+    difficulty: 'beginner',
+    category: 'basics'
   }
 ]
 
