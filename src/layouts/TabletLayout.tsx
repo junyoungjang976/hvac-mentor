@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, FileText, BookOpen, AlertTriangle, CheckSquare, Syringe, Zap, Smartphone } from 'lucide-react'
+import { Search, FileText, BookOpen, AlertTriangle, CheckSquare, Syringe, Zap, Smartphone, GraduationCap } from 'lucide-react'
 
 // Data imports
 import { getFieldStandard, REFRIGERANT_INFO } from '../data/fieldStandards'
@@ -8,6 +8,7 @@ import { FAULT_PATTERNS } from '../data/faultPatterns'
 import { EMERGENCY_MANUAL } from '../data/emergency'
 import { CHECKLIST } from '../data/checklist'
 import { CHARGING_GUIDE } from '../data/chargingGuide'
+import { REFRIGERATION_QUIZ, shuffleQuizArray, type RefrigerationQuizQuestion } from '../data/refrigerationQuiz'
 
 // Lib imports
 import { diagnoseSystem, generateReportText } from '../lib/diagnosis'
@@ -17,7 +18,7 @@ import { getAIMentorResponse } from '../lib/gemini'
 import ElectricTab from '../components/tabs/ElectricTab'
 import ReportTab from '../components/tabs/ReportTab'
 
-type TabType = 'diagnosis' | 'report' | 'faults' | 'emergency' | 'checklist' | 'charging' | 'electric'
+type TabType = 'diagnosis' | 'report' | 'faults' | 'emergency' | 'checklist' | 'charging' | 'electric' | 'quiz'
 
 interface TabletLayoutProps {
   onDeviceChange: () => void
@@ -45,6 +46,18 @@ export default function TabletLayout({ onDeviceChange }: TabletLayoutProps) {
   // UI state
   const [activeTab, setActiveTab] = useState<TabType>('diagnosis')
 
+  // Quiz state
+  const QUIZ_SIZE = 10
+  const [quizQuestions, setQuizQuestions] = useState<RefrigerationQuizQuestion[]>(() =>
+    shuffleQuizArray([...REFRIGERATION_QUIZ]).slice(0, QUIZ_SIZE)
+  )
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
+  const [showResult, setShowResult] = useState(false)
+  const [correctCount, setCorrectCount] = useState(0)
+  const [quizCompleted, setQuizCompleted] = useState(false)
+  const currentQuestion = quizQuestions[currentQuestionIndex]
+
   // Derived values
   const fieldStd = getFieldStandard(refrigerant, facilityType)
   const { targetHighP } = getHighPressureTarget(refrigerant, ambientTemp)
@@ -57,6 +70,39 @@ export default function TabletLayout({ onDeviceChange }: TabletLayoutProps) {
     setSymptoms(prev =>
       prev.includes(symptom) ? prev.filter(s => s !== symptom) : [...prev, symptom]
     )
+  }
+
+  // Quiz handlers
+  const handleAnswerSelect = (index: number) => {
+    if (showResult) return
+    setSelectedAnswer(index)
+  }
+
+  const handleSubmitAnswer = () => {
+    if (selectedAnswer === null) return
+    setShowResult(true)
+    if (selectedAnswer === currentQuestion.correctIndex) {
+      setCorrectCount(prev => prev + 1)
+    }
+  }
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < quizQuestions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1)
+      setSelectedAnswer(null)
+      setShowResult(false)
+    } else {
+      setQuizCompleted(true)
+    }
+  }
+
+  const handleRestartQuiz = () => {
+    setQuizQuestions(shuffleQuizArray([...REFRIGERATION_QUIZ]).slice(0, QUIZ_SIZE))
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer(null)
+    setShowResult(false)
+    setCorrectCount(0)
+    setQuizCompleted(false)
   }
 
   const handleDiagnosis = async () => {
@@ -119,6 +165,7 @@ export default function TabletLayout({ onDeviceChange }: TabletLayoutProps) {
     { id: 'checklist', label: '체크리스트', icon: CheckSquare },
     { id: 'charging', label: '충전 가이드', icon: Syringe },
     { id: 'electric', label: '전기 회로', icon: Zap },
+    { id: 'quiz', label: '냉동 퀴즈', icon: GraduationCap },
   ]
 
   const severityEmoji: Record<string, string> = {
@@ -426,6 +473,155 @@ export default function TabletLayout({ onDeviceChange }: TabletLayoutProps) {
           )}
 
           {activeTab === 'electric' && <ElectricTab />}
+
+          {activeTab === 'quiz' && (
+            <div className="card">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold">🎓 냉동 기술 퀴즈</h3>
+                <p className="text-sm text-gray-500">
+                  총 {REFRIGERATION_QUIZ.length}문제 중 {QUIZ_SIZE}문제 랜덤 출제
+                </p>
+              </div>
+
+              {quizCompleted ? (
+                <div className="max-w-md mx-auto text-center py-8">
+                  <div className="text-6xl mb-4">
+                    {correctCount >= quizQuestions.length * 0.8 ? '🏆' :
+                     correctCount >= quizQuestions.length * 0.5 ? '👍' : '📚'}
+                  </div>
+                  <h4 className="text-2xl font-bold text-gray-800 mb-2">퀴즈 완료!</h4>
+                  <p className="text-4xl font-bold text-indigo-600 mb-2">
+                    {correctCount} / {quizQuestions.length}
+                  </p>
+                  <p className="text-lg text-gray-600 mb-6">
+                    {correctCount >= quizQuestions.length * 0.8
+                      ? '훌륭합니다! 냉동 전문가시네요!'
+                      : correctCount >= quizQuestions.length * 0.5
+                      ? '잘했어요! 조금만 더 공부하면 됩니다.'
+                      : '기초부터 다시 학습해보세요!'}
+                  </p>
+                  <button
+                    onClick={handleRestartQuiz}
+                    className="btn-primary px-8"
+                  >
+                    🔄 새 퀴즈 풀기
+                  </button>
+                </div>
+              ) : (
+                <div className="max-w-2xl mx-auto">
+                  {/* Progress */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-500 transition-all duration-300"
+                        style={{ width: `${((currentQuestionIndex + 1) / quizQuestions.length) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-gray-600">
+                      {currentQuestionIndex + 1} / {quizQuestions.length}
+                    </span>
+                  </div>
+
+                  {/* Question */}
+                  <div className="bg-gray-50 rounded-xl p-6 mb-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                        currentQuestion.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
+                        currentQuestion.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {currentQuestion.difficulty === 'beginner' ? '초급' :
+                         currentQuestion.difficulty === 'intermediate' ? '중급' : '고급'}
+                      </span>
+                      <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
+                        {currentQuestion.category === 'basics' ? '기초' :
+                         currentQuestion.category === 'pt-chart' ? 'P-T 차트' :
+                         currentQuestion.category === 'troubleshooting' ? '고장진단' :
+                         currentQuestion.category === 'refrigerant' ? '냉매' :
+                         currentQuestion.category === 'components' ? '부품' : '충전'}
+                      </span>
+                    </div>
+                    <p className="text-xl font-bold text-gray-800">{currentQuestion.question}</p>
+                  </div>
+
+                  {/* Options */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {currentQuestion.options.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswerSelect(index)}
+                        disabled={showResult}
+                        className={`p-4 rounded-xl text-left transition-all ${
+                          showResult
+                            ? index === currentQuestion.correctIndex
+                              ? 'bg-green-100 border-2 border-green-500'
+                              : index === selectedAnswer
+                              ? 'bg-red-100 border-2 border-red-500'
+                              : 'bg-white border-2 border-transparent'
+                            : selectedAnswer === index
+                            ? 'bg-indigo-100 border-2 border-indigo-500'
+                            : 'bg-white border-2 border-gray-200 hover:border-indigo-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                            showResult
+                              ? index === currentQuestion.correctIndex
+                                ? 'bg-green-500 text-white'
+                                : index === selectedAnswer
+                                ? 'bg-red-500 text-white'
+                                : 'bg-gray-200 text-gray-600'
+                              : selectedAnswer === index
+                              ? 'bg-indigo-500 text-white'
+                              : 'bg-gray-200 text-gray-600'
+                          }`}>
+                            {index + 1}
+                          </span>
+                          <span className="font-medium">{option}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Explanation */}
+                  {showResult && (
+                    <div className={`p-4 rounded-xl mb-6 ${
+                      selectedAnswer === currentQuestion.correctIndex
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-blue-50 border border-blue-200'
+                    }`}>
+                      <p className="font-bold text-lg mb-2">
+                        {selectedAnswer === currentQuestion.correctIndex ? '✅ 정답입니다!' : '❌ 오답입니다'}
+                      </p>
+                      <p className="text-gray-700">{currentQuestion.explanation}</p>
+                    </div>
+                  )}
+
+                  {/* Action Button */}
+                  {!showResult ? (
+                    <button
+                      onClick={handleSubmitAnswer}
+                      disabled={selectedAnswer === null}
+                      className={`w-full py-4 rounded-xl font-bold text-lg ${
+                        selectedAnswer === null
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                      }`}
+                    >
+                      정답 확인
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleNextQuestion}
+                      className="w-full py-4 bg-indigo-500 text-white rounded-xl font-bold text-lg hover:bg-indigo-600"
+                    >
+                      {currentQuestionIndex < quizQuestions.length - 1 ? '다음 문제 →' : '결과 보기'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
 
