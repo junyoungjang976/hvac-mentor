@@ -5,6 +5,9 @@ export interface ElectricalComponent {
   name_en: string
   function: string
   spec?: string
+  visualDescription?: string
+  fieldTips?: string[]
+  commonFailures?: string[]
 }
 
 export interface CircuitDiagram {
@@ -36,91 +39,230 @@ export const ELECTRICAL_COMPONENTS: Record<string, ElectricalComponent> = {
     name_kr: "전자접촉기",
     name_en: "Magnetic Contactor",
     function: "모터 전원을 개폐하는 릴레이. 코일에 전류가 흐르면 접점이 붙어 주회로를 연결함",
-    spec: "AC 220V 코일, 3P 주접점"
+    spec: "AC 220V 코일, 3P 주접점",
+    visualDescription: "코일 기호(원) + 주접점(3개 직선) + 보조접점",
+    fieldTips: [
+      "코일 웅웅 소리 → 전압 부족 또는 코일 불량",
+      "접점 검게 변색 → 과부하 또는 교체 시기",
+      "코일 저항 측정으로 단락/단선 확인 가능"
+    ],
+    commonFailures: [
+      "접점 고착 (붙어서 안 떨어짐)",
+      "접점 마모 (접촉 불량)",
+      "코일 단선 (전자석 작동 안 함)"
+    ]
   },
   THR: {
     code: "THR",
     name_kr: "열동계전기",
     name_en: "Thermal Overload Relay",
     function: "모터 과부하 보호. 정격 전류 초과 시 바이메탈이 휘어져 접점 개방",
-    spec: "정격 전류의 105~120% 설정"
+    spec: "정격 전류의 105~120% 설정",
+    visualDescription: "직사각형 안에 바이메탈 기호, 리셋 버튼",
+    fieldTips: [
+      "트립 시 빨간 버튼 돌출 확인",
+      "냉각 후 리셋 (3~5분 대기)",
+      "설정값: 모터 정격 전류 105~120%"
+    ],
+    commonFailures: [
+      "바이메탈 피로로 오동작",
+      "설정값 부적절",
+      "리셋 불가 (내부 손상)"
+    ]
   },
   NFB: {
     code: "NFB",
     name_kr: "배선용차단기",
     name_en: "No-Fuse Breaker",
     function: "회로 보호용 차단기. 과전류/단락 시 자동 차단",
-    spec: "2P 또는 3P, 정격 전류별 선정"
+    spec: "2P 또는 3P, 정격 전류별 선정",
+    visualDescription: "사각형 안에 X 표시, 양쪽에 접점 기호",
+    fieldTips: [
+      "트립 시 레버가 중간 위치",
+      "OFF로 내린 후 다시 ON",
+      "반복 트립 시 원인 파악 필수"
+    ],
+    commonFailures: [
+      "내부 접점 손상",
+      "과전류 시 차단 지연",
+      "레버 기구 고장"
+    ]
   },
   TIC: {
     code: "TIC",
     name_kr: "온도조절기",
     name_en: "Temperature Controller",
     function: "설정 온도에 따라 압축기를 자동 제어. FOX-2SA1 모델 주로 사용",
-    spec: "FOX-2SA1, 범위 -35~+35°C"
+    spec: "FOX-2SA1, 범위 -35~+35°C",
+    visualDescription: "사각형에 온도 표시, 센서 연결선",
+    fieldTips: [
+      "dF(차동값) 설정으로 헌팅 방지",
+      "센서 위치가 냉기 흐름 중에 있어야",
+      "FOX-2SA1 모델이 일반적"
+    ],
+    commonFailures: [
+      "센서 단선/단락",
+      "접점 고착",
+      "설정값 이탈"
+    ]
   },
   DPS: {
     code: "DPS",
     name_kr: "압력스위치",
     name_en: "Dual Pressure Switch",
     function: "저압(LP)/고압(HP) 이상 시 압축기 정지. 안전장치",
-    spec: "LP: 0.5~1.5kg/cm², HP: 18~22kg/cm²"
+    spec: "LP: 0.5~1.5kg/cm², HP: 18~22kg/cm²",
+    visualDescription: "원 안에 L/H 표시, 스위치 기호",
+    fieldTips: [
+      "LP 트립 → 냉매 부족 우선 의심",
+      "HP 트립 → 응축기 점검 우선",
+      "설정 압력 확인 (현장 조건 맞게)"
+    ],
+    commonFailures: [
+      "압력 포트 막힘",
+      "다이어프램 손상",
+      "접점 고착"
+    ]
   },
   "F.HPC": {
     code: "F.HPC",
     name_kr: "고압차단스위치",
     name_en: "Fan High Pressure Cutout",
     function: "응축 압력 상승 시 응축기 팬 강제 기동",
-    spec: "동작: 14kg/cm², 복귀: 12kg/cm²"
+    spec: "동작: 14kg/cm², 복귀: 12kg/cm²",
+    visualDescription: "DPS 유사, HP 전용 표시",
+    fieldTips: [
+      "동작 압력 14kg/cm2 일반적",
+      "복귀 압력 12kg/cm2 일반적",
+      "고압 시 응축기 팬 강제 작동"
+    ],
+    commonFailures: [
+      "설정 압력 이탈",
+      "접점 불량",
+      "감지 지연"
+    ]
   },
   "52C": {
     code: "52C",
     name_kr: "압축기 접촉기",
     name_en: "Compressor Contactor",
     function: "압축기 전용 전자접촉기. MC와 동일 기능",
-    spec: "AC 220V, 정격 전류 이상 선정"
+    spec: "AC 220V, 정격 전류 이상 선정",
+    visualDescription: "MC와 동일, 52C 또는 52COMP 표기",
+    fieldTips: [
+      "MC와 동일 점검 방법",
+      "압축기 기동 전류 고려해 용량 선정",
+      "정격의 1.5배 이상 여유"
+    ],
+    commonFailures: [
+      "접점 용착 (붙음)",
+      "코일 단선",
+      "접점 마모"
+    ]
   },
   OL: {
     code: "OL",
     name_kr: "과부하계전기",
     name_en: "Overload Relay",
     function: "THR과 동일. 전동기 과부하 보호",
-    spec: "정격 전류의 110~120%"
+    spec: "정격 전류의 110~120%",
+    visualDescription: "THR과 동일",
+    fieldTips: [
+      "THR과 동일한 기능",
+      "다른 표기법일 뿐",
+      "설정 및 점검 방법 동일"
+    ],
+    commonFailures: ["THR과 동일한 고장 모드"]
   },
   ELB: {
     code: "ELB",
     name_kr: "누전차단기",
     name_en: "Earth Leakage Breaker",
     function: "누전 발생 시 회로 차단. 감전 방지",
-    spec: "정격 감도 전류 30mA, 동작 시간 0.03초"
+    spec: "정격 감도 전류 30mA, 동작 시간 0.03초",
+    visualDescription: "NFB 기호에 T(테스트) 버튼 추가",
+    fieldTips: [
+      "월 1회 테스트 버튼 동작 확인",
+      "트립 시 절연저항 측정 우선",
+      "빗물 침투 여부 확인"
+    ],
+    commonFailures: [
+      "감도 저하",
+      "테스트 버튼 고장",
+      "내부 회로 이상"
+    ]
   },
   PB: {
     code: "PB",
     name_kr: "푸시버튼",
     name_en: "Push Button",
     function: "수동 조작 스위치. THR 트립 후 수동 리셋용",
-    spec: "순간 접점형 (ON/OFF)"
+    spec: "순간 접점형 (ON/OFF)",
+    visualDescription: "원형 접점 기호",
+    fieldTips: [
+      "a접점: 누르면 ON",
+      "b접점: 누르면 OFF",
+      "THR 리셋용은 순간 접점"
+    ],
+    commonFailures: [
+      "접점 고착",
+      "스프링 피로",
+      "배선 단선"
+    ]
   },
   DS: {
     code: "DS",
     name_kr: "제상스위치",
     name_en: "Defrost Switch",
     function: "제상 주기 및 시간 제어",
-    spec: "타이머식 또는 온도식"
+    spec: "타이머식 또는 온도식",
+    visualDescription: "시계 기호 또는 타이머 박스",
+    fieldTips: [
+      "제상 간격: 6~8시간 일반적",
+      "제상 시간: 20~30분 일반적",
+      "현장 조건에 맞게 조정"
+    ],
+    commonFailures: [
+      "타이머 모터 고장",
+      "접점 마모",
+      "설정 오류"
+    ]
   },
   DH: {
     code: "DH",
     name_kr: "제상히터",
     name_en: "Defrost Heater",
     function: "증발기 성에 제거용 전기 히터",
-    spec: "AC 220V, 용량별 선정"
+    spec: "AC 220V, 용량별 선정",
+    visualDescription: "저항 기호(지그재그) 또는 네모에 H 표시",
+    fieldTips: [
+      "저항 측정으로 단선 확인",
+      "무한대 → 단선, 교체 필요",
+      "정상 저항: 20~50옴 (용량별 상이)"
+    ],
+    commonFailures: [
+      "히터 단선",
+      "절연 저하 (누전)",
+      "용량 감소 (노후)"
+    ]
   },
   DTS: {
     code: "DTS",
     name_kr: "제상종료스위치",
     name_en: "Defrost Termination Switch",
     function: "제상 완료 시 히터 차단 (온도 감지)",
-    spec: "동작 온도: +10~15°C"
+    spec: "동작 온도: +10~15°C",
+    visualDescription: "센서 기호에 온도 표시",
+    fieldTips: [
+      "동작 온도: +10~15도",
+      "센서가 증발기 핀에 밀착되어야",
+      "제상 종료 신호 발생"
+    ],
+    commonFailures: [
+      "센서 고장 (오동작)",
+      "위치 이탈",
+      "배선 단선"
+    ]
   }
 }
 
