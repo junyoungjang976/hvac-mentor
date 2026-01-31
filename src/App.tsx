@@ -4,6 +4,7 @@ import './index.css'
 
 // Component imports
 import ElectricTab from './components/tabs/ElectricTab'
+import ReportTab from './components/tabs/ReportTab'
 
 // Data imports
 import { getFieldStandard, REFRIGERANT_INFO } from './data/fieldStandards'
@@ -595,11 +596,13 @@ function App() {
           )}
 
           {activeTab === 'report' && (
-            <div className="card">
-              <h3 className="text-lg font-bold mb-4">📤 고객 보고서 생성</h3>
-              <p className="text-gray-600">점검 결과를 고객에게 전달할 카드를 생성합니다.</p>
-              <p className="text-gray-500 mt-4">🚧 이 기능은 개발 중입니다.</p>
-            </div>
+            <ReportTab
+              refrigerant={refrigerant}
+              facilityType={facilityType}
+              lowPressure={diagnosisResult ? lowP : undefined}
+              highPressure={diagnosisResult ? highP : undefined}
+              diagnosisResult={diagnosisResult}
+            />
           )}
 
           {activeTab === 'electric' && <ElectricTab />}
