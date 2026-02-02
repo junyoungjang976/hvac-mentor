@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import html2canvas from 'html2canvas'
 import {
   AlertCircle,
   Clock,
@@ -13,7 +14,9 @@ import {
   RotateCcw,
   Package,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Copy,
+  Check
 } from 'lucide-react'
 import {
   getSymptomName,
@@ -72,11 +75,103 @@ export default function DiagnosisResult({
   onRestart
 }: DiagnosisResultProps) {
   const [selectedScenario, setSelectedScenario] = useState<'min' | 'max'>('min')
+  const [copied, setCopied] = useState(false)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const resultRef = useRef<HTMLDivElement>(null)
 
   const currentDiagnosis = selectedScenario === 'min' ? minDiagnosis : maxDiagnosis
 
+  // Generate shareable text
+  const getShareText = () => {
+    const symptomNames = symptoms.map(s => getSymptomName(s)).join(', ')
+    return `[HVAC 진단 코드: ${code}]
+장비: ${getEquipmentName(equipment)}
+증상: ${symptomNames}
+긴급도: ${urgencyLabels[minDiagnosis.urgency]} ~ ${urgencyLabels[maxDiagnosis.urgency]}
+예상원인: ${minDiagnosis.cause}
+
+👉 상세 내용은 엔지니어에게 코드를 전달해주세요.`
+  }
+
+  // Copy code to clipboard
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      alert('코드 복사에 실패했습니다: ' + code)
+    }
+  }
+
+  // SMS share
+  const handleSmsShare = () => {
+    const text = encodeURIComponent(getShareText())
+    window.location.href = `sms:?body=${text}`
+  }
+
+  // Email share
+  const handleEmailShare = () => {
+    const subject = encodeURIComponent(`[HVAC 진단] 코드: ${code}`)
+    const body = encodeURIComponent(getShareText())
+    window.location.href = `mailto:?subject=${subject}&body=${body}`
+  }
+
+  // Download as image
+  const handleDownload = async () => {
+    if (!resultRef.current) return
+
+    setIsGeneratingPdf(true)
+    try {
+      const canvas = await html2canvas(resultRef.current, {
+        scale: 2,
+        backgroundColor: '#f8fafc',
+        logging: false
+      })
+
+      const link = document.createElement('a')
+      link.download = `hvac-diagnosis-${code}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } catch (err) {
+      console.error('Download failed:', err)
+      alert('이미지 생성에 실패했습니다.')
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }
+
+  // Web Share API
+  const handleShare = async () => {
+    const shareData = {
+      title: `HVAC 진단 코드: ${code}`,
+      text: getShareText(),
+      url: window.location.href
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          // Fallback: copy to clipboard
+          handleCopyCode()
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(getShareText())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      alert('공유 내용이 클립보드에 복사되었습니다.')
+    }
+
+    onShare('share')
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+      <div ref={resultRef}>
       {/* Header with Code */}
       <div className="bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl p-6 text-white">
         <div className="flex items-start justify-between">
@@ -237,7 +332,7 @@ export default function DiagnosisResult({
 
       {/* Workflow Recommendation */}
       {workflow && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-8">
           <div className="px-6 py-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b">
             <h3 className="font-bold text-gray-900">작업 가이드</h3>
           </div>
@@ -319,34 +414,61 @@ export default function DiagnosisResult({
           </div>
         </div>
       )}
+      </div>{/* End of resultRef */}
+
+      {/* Copy Code Button */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 className="font-bold text-gray-900 mb-4">진단 코드 복사</h3>
+        <button
+          onClick={handleCopyCode}
+          className={`w-full flex items-center justify-center gap-2 px-4 py-4 rounded-lg font-medium text-lg transition-all ${
+            copied
+              ? 'bg-green-500 text-white'
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border-2 border-dashed border-gray-300'
+          }`}
+        >
+          {copied ? (
+            <>
+              <Check className="w-6 h-6" />
+              <span>복사됨!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-6 h-6" />
+              <span className="font-mono text-2xl tracking-widest">{code}</span>
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Share Actions */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="font-bold text-gray-900 mb-4">진단 결과 공유</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <button
-            onClick={() => onShare('sms')}
+            onClick={handleSmsShare}
             className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
           >
             <Smartphone className="w-5 h-5" />
             <span>문자로 기사에게 전송</span>
           </button>
           <button
-            onClick={() => onShare('email')}
+            onClick={handleEmailShare}
             className="flex items-center justify-center gap-2 px-4 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors"
           >
             <Mail className="w-5 h-5" />
             <span>이메일로 전송</span>
           </button>
           <button
-            onClick={() => onShare('download')}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            onClick={handleDownload}
+            disabled={isGeneratingPdf}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
           >
             <Download className="w-5 h-5" />
-            <span>PDF 다운로드</span>
+            <span>{isGeneratingPdf ? '생성 중...' : '이미지 다운로드'}</span>
           </button>
           <button
-            onClick={() => onShare('share')}
+            onClick={handleShare}
             className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors"
           >
             <Share2 className="w-5 h-5" />
