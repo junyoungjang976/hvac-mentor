@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import html2canvas from 'html2canvas'
+import { useState } from 'react'
 import {
   AlertCircle,
   Clock,
@@ -76,8 +75,6 @@ export default function DiagnosisResult({
 }: DiagnosisResultProps) {
   const [selectedScenario, setSelectedScenario] = useState<'min' | 'max'>('min')
   const [copied, setCopied] = useState(false)
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
-  const resultRef = useRef<HTMLDivElement>(null)
 
   const currentDiagnosis = selectedScenario === 'min' ? minDiagnosis : maxDiagnosis
 
@@ -117,28 +114,74 @@ export default function DiagnosisResult({
     window.location.href = `mailto:?subject=${subject}&body=${body}`
   }
 
-  // Download as image
-  const handleDownload = async () => {
-    if (!resultRef.current) return
+  // Download as text report
+  const handleDownload = () => {
+    const symptomNames = symptoms.map(s => getSymptomName(s)).join(', ')
+    const workflowText = workflow ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+작업 가이드
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+난이도: ${difficultyLabels[workflow.difficulty]}
+예상 작업 시간: ${workflow.estimatedDuration.min}분 ~ ${workflow.estimatedDuration.max}분
 
-    setIsGeneratingPdf(true)
-    try {
-      const canvas = await html2canvas(resultRef.current, {
-        scale: 2,
-        backgroundColor: '#f8fafc',
-        logging: false
-      })
+[필요 공구]
+${workflow.requiredTools.map(t => `• ${t}`).join('\n')}
 
-      const link = document.createElement('a')
-      link.download = `hvac-diagnosis-${code}.png`
-      link.href = canvas.toDataURL('image/png')
-      link.click()
-    } catch (err) {
-      console.error('Download failed:', err)
-      alert('이미지 생성에 실패했습니다.')
-    } finally {
-      setIsGeneratingPdf(false)
-    }
+[필요할 수 있는 부품]
+${workflow.optionalParts.length > 0 ? workflow.optionalParts.map(p => `• ${p}`).join('\n') : '없음'}
+
+[점검 순서]
+${workflow.checkSequence.map(s => `${s.order}. ${s.title}\n   ${s.description}${s.cautionNote ? `\n   ⚠️ ${s.cautionNote}` : ''}`).join('\n\n')}
+` : ''
+
+    const report = `
+════════════════════════════════════════
+      HVAC 진단 보고서
+════════════════════════════════════════
+
+진단 코드: ${code}
+생성 일시: ${new Date().toLocaleString('ko-KR')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+진단 정보
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+장비: ${getEquipmentName(equipment)}
+선택한 증상: ${symptomNames}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+낙관적 진단 (최선의 경우)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+긴급도: ${urgencyLabels[minDiagnosis.urgency]}
+추정 원인: ${minDiagnosis.cause}
+권장 조치: ${minDiagnosis.action}
+예상 소요 시간: ${minDiagnosis.estimatedTime}
+자가 수리 가능: ${minDiagnosis.selfFixable ? '예' : '아니오 (전문가 필요)'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+보수적 진단 (최악의 경우)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+긴급도: ${urgencyLabels[maxDiagnosis.urgency]}
+추정 원인: ${maxDiagnosis.cause}
+권장 조치: ${maxDiagnosis.action}
+예상 소요 시간: ${maxDiagnosis.estimatedTime}
+자가 수리 가능: ${maxDiagnosis.selfFixable ? '예' : '아니오 (전문가 필요)'}
+${workflowText}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+안내사항
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 이 진단은 자동화된 예비 진단이며, 전문가의 직접 점검을 대체할 수 없습니다
+• 안전과 관련된 문제는 즉시 전문 기술자에게 연락하시기 바랍니다
+• 자가 수리 시도 중 문제가 악화되면 즉시 작업을 중단하세요
+
+════════════════════════════════════════
+`
+
+    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' })
+    const link = document.createElement('a')
+    link.download = `hvac-diagnosis-${code}.txt`
+    link.href = URL.createObjectURL(blob)
+    link.click()
+    URL.revokeObjectURL(link.href)
   }
 
   // Web Share API
@@ -171,7 +214,6 @@ export default function DiagnosisResult({
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <div ref={resultRef}>
       {/* Header with Code */}
       <div className="bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl p-6 text-white">
         <div className="flex items-start justify-between">
@@ -414,7 +456,6 @@ export default function DiagnosisResult({
           </div>
         </div>
       )}
-      </div>{/* End of resultRef */}
 
       {/* Copy Code Button */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -461,11 +502,10 @@ export default function DiagnosisResult({
           </button>
           <button
             onClick={handleDownload}
-            disabled={isGeneratingPdf}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
           >
             <Download className="w-5 h-5" />
-            <span>{isGeneratingPdf ? '생성 중...' : '이미지 다운로드'}</span>
+            <span>보고서 다운로드</span>
           </button>
           <button
             onClick={handleShare}
