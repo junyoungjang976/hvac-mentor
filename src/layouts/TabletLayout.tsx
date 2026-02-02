@@ -22,9 +22,10 @@ type TabType = 'diagnosis' | 'report' | 'faults' | 'emergency' | 'checklist' | '
 
 interface TabletLayoutProps {
   onDeviceChange: () => void
+  onSwitchToCustomer?: () => void
 }
 
-export default function TabletLayout({ onDeviceChange }: TabletLayoutProps) {
+export default function TabletLayout({ onDeviceChange, onSwitchToCustomer }: TabletLayoutProps) {
   // Settings state
   const [refrigerant, setRefrigerant] = useState<'R-22' | 'R-404A' | 'R-134a'>('R-22')
   const [facilityType, setFacilityType] = useState('냉장 (0°C)')
@@ -181,13 +182,24 @@ export default function TabletLayout({ onDeviceChange }: TabletLayoutProps) {
             <h1 className="text-2xl font-bold flex items-center gap-2">🔧 AI HVAC 현장 멘토</h1>
             <p className="text-white/80 mt-1">PDF 검증 P-T 차트 | 실시간 진단 | AI 멘토링</p>
           </div>
-          <button
-            onClick={onDeviceChange}
-            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
-          >
-            <Smartphone size={20} />
-            <span className="text-sm">스마트폰 모드</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {onSwitchToCustomer && (
+              <button
+                onClick={onSwitchToCustomer}
+                className="flex items-center gap-2 px-4 py-2 bg-teal-500 hover:bg-teal-600 rounded-xl transition-colors"
+              >
+                <span className="text-lg">👤</span>
+                <span className="text-sm">고객 모드</span>
+              </button>
+            )}
+            <button
+              onClick={onDeviceChange}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
+            >
+              <Smartphone size={20} />
+              <span className="text-sm">스마트폰 모드</span>
+            </button>
+          </div>
         </div>
       </header>
 

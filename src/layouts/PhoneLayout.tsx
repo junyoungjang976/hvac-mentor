@@ -20,9 +20,10 @@ type PhoneTab = 'diagnosis' | 'reference' | 'electric' | 'report' | 'settings'
 
 interface PhoneLayoutProps {
   onDeviceChange: () => void
+  onSwitchToCustomer?: () => void
 }
 
-export default function PhoneLayout({ onDeviceChange }: PhoneLayoutProps) {
+export default function PhoneLayout({ onDeviceChange, onSwitchToCustomer }: PhoneLayoutProps) {
   const [activeTab, setActiveTab] = useState<PhoneTab>('diagnosis')
 
   // Settings state
@@ -101,9 +102,19 @@ export default function PhoneLayout({ onDeviceChange }: PhoneLayoutProps) {
             <p className="text-xs text-white/70">{refrigerant} | {facilityType}</p>
           </div>
         </div>
-        <div className="text-right text-sm">
-          <p className="text-white/80">외기 {ambientTemp}°C</p>
-          <p className="text-white/60 text-xs">목표고압 {targetHighP}kg</p>
+        <div className="flex items-center gap-3">
+          {onSwitchToCustomer && (
+            <button
+              onClick={onSwitchToCustomer}
+              className="px-3 py-1.5 bg-teal-500 hover:bg-teal-600 rounded-lg text-xs font-medium transition-colors"
+            >
+              👤 고객
+            </button>
+          )}
+          <div className="text-right text-sm">
+            <p className="text-white/80">외기 {ambientTemp}°C</p>
+            <p className="text-white/60 text-xs">목표고압 {targetHighP}kg</p>
+          </div>
         </div>
       </header>
 
