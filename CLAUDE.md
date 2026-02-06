@@ -1,114 +1,119 @@
-# HVAC Mentor - AI 냉동공조 현장 멘토
+# claude.md — Supabase Project Operating Rules (Non-Developer Friendly)
 
-## 개요
-냉동공조 기술자를 위한 AI 지원 진단 및 멘토링 도구.
-기존 Streamlit 앱(ai-havc-agent)을 React + Vite + Supabase + Vercel로 재구축.
+이 문서는 Claude Code가 이 프로젝트에서 "임의 판단"을 하지 못하도록 제한하는 운영 규칙이다.
+결정 권한은 항상 사용자에게 있으며, Claude는 실행 담당이다.
 
-## 기술 스택
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS 4
-- **Backend**: Supabase (PostgreSQL + Auth + Storage)
-- **AI**: Google Gemini 2.0 Flash
-- **Deploy**: Vercel
+---
 
-## 프로젝트 구조
-```
-hvac-mentor/
-├── src/
-│   ├── data/           # 정적 데이터 (P-T 차트, 고장패턴 등)
-│   │   ├── ptChart.ts
-│   │   ├── fieldStandards.ts
-│   │   ├── faultPatterns.ts
-│   │   ├── emergency.ts
-│   │   ├── checklist.ts
-│   │   └── chargingGuide.ts
-│   ├── lib/            # 유틸리티 및 외부 연동
-│   │   ├── supabase.ts
-│   │   ├── gemini.ts
-│   │   └── diagnosis.ts
-│   ├── components/     # UI 컴포넌트
-│   ├── App.tsx         # 메인 앱
-│   └── index.css       # Tailwind 스타일
-├── supabase/
-│   └── migrations/     # DB 마이그레이션
-├── .env.example
-├── vercel.json
-└── CLAUDE.md
-```
+## 0) 최우선 원칙
+1. 기존 기능/데이터를 깨뜨릴 가능성이 있으면 즉시 중단하고 보고한다.
+2. 보안/권한/RLS/시크릿 관련 작업은 "승인 게이트" 없이는 진행하지 않는다.
+3. 한 번에 크게 바꾸지 않는다. (작게, 자주, 검증하며)
 
-## 주요 기능
+---
 
-### 1. 진단 탭
-- 저압/고압 입력
-- 현장 증상 선택 (헌팅, 배관 성에, 액면계 거품, 압축기 소음)
-- 자동 진단 (P-T 차트 기반)
-- AI 멘토 가이드 (Gemini)
-- 진단 리포트 다운로드
+## 1) 수정 가능 / 금지 영역
 
-### 2. 고장 패턴 탭
-- 8가지 고장 패턴 사전
-- 원인, 증상, 조치사항, 주의사항
+### ✅ 수정 가능(예시)
+- src/
+- app/ 또는 pages/
+- components/
+- lib/
+- utils/
 
-### 3. 비상 대응 탭
-- 5가지 긴급 상황 매뉴얼
-- 고압 이상, 액압축, 누설, 과열, 전기 이상
+### ❌ 절대 수정 금지(승인 없이는 금지)
+- .env, .env.*
+- supabase 프로젝트 설정/키/URL 하드코딩
+- Supabase RLS 정책(Policy)
+- DB 스키마 변경(테이블/컬럼/인덱스/트리거)
+- 마이그레이션 파일(생성/수정 포함)
+- Edge Functions / Triggers (있는 경우)
+- auth 관련 핵심 흐름(로그인/세션/권한)
 
-### 4. 체크리스트 탭
-- 일일/주간/월간/계절별 점검 항목
-- 체크 상태 저장 (Supabase)
+⚠️ 위 항목이 필요해 보이면, 먼저 "변경 제안서"만 작성하고 사용자의 승인을 기다린다.
 
-### 5. 충전 가이드 탭
-- 냉매별 충전 방법 (R-22, R-404A, R-134a)
-- 준비 → 충전 → 확인 → 완료 기준
+---
 
-### 6. 고객 보고서 탭 (개발 중)
-- 점검 결과 이미지 카드 생성
+## 2) 작업 단위 규칙(통제 단위 고정)
+- 한 작업은 하나의 목적만 가진다.
+- 한 작업에서 수정 파일은 최대 3개를 원칙으로 한다.
+- DB/RLS 관련 작업은 반드시 "코드 작업"과 분리한다.
+  - (예) 1) UI/API 코드 수정 PR, 2) DB/RLS 변경 PR
 
-### 7. 전기 회로 탭 (개발 중)
-- 전기 회로 다이어그램
+"겸사겸사 개선"은 금지.
 
-## 환경변수
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_GOOGLE_AI_KEY=your_google_ai_key
-```
+---
 
-## 개발 명령어
-```bash
-# 의존성 설치
-npm install
+## 3) 작업 시작 전: 사전 보고(승인 게이트)
+작업을 시작하기 전에 반드시 아래를 먼저 제시한다.
 
-# 개발 서버
-npm run dev
+1) 목적(한 문장)
+2) 변경 범위(수정 파일/폴더 목록)
+3) 위험도(낮음/중간/높음) + 이유
+4) 롤백 계획(되돌리는 방법)
 
-# 빌드
-npm run build
+사용자 승인 없이는 작업을 시작하지 않는다.
 
-# 배포
-vercel --prod
-```
+---
 
-## P-T 차트 데이터
-- R-22: Forane PDF 기준 (°C, kg/cm²G)
-- R-404A: iGas PDF 기준
-- R-134a: iGas PDF 기준
+## 4) Supabase 안전 규칙(핵심)
 
-## 진단 로직
-1. 저압/고압 입력 → P-T 차트로 증발/응축 온도 계산
-2. 현장 기준(FIELD_STANDARDS)과 비교
-3. 패턴 매칭 (FAULT_PATTERNS)
-4. 증상 기반 추가 진단
-5. AI 멘토 응답 생성
+### 4-1) RLS(권한) 규칙
+- RLS/Policy는 절대 임의 수정하지 않는다.
+- 필요 시, 아래 내용을 포함한 "정책 제안서"만 작성한다:
+  - 어떤 테이블/행에 대해
+  - 누가(역할/사용자)가
+  - 어떤 조건에서(select/insert/update/delete)
+  - 허용/차단되어야 하는지
+  - 보안상 위험 포인트(데이터 노출 가능성)
 
-## Supabase 테이블
-- `hvac_diagnoses`: 진단 기록
-- `hvac_equipment`: 설비 정보
-- `hvac_checklist_records`: 체크리스트 완료 기록
+### 4-2) DB 스키마/마이그레이션 규칙
+- 스키마 변경이 필요하면, 먼저 "스키마 변경 설계안"을 작성하고 승인 받는다.
+- 설계안에는 반드시 포함:
+  - 변경 전/후 스키마 요약
+  - 데이터 마이그레이션 필요 여부
+  - 다운타임/리스크
+  - 되돌리는 방법(가능/불가능 명시)
 
-## 배포
-- **Production**: https://hvac-mentor.vercel.app/
+---
 
-## 관련 링크
-- 기존 Streamlit 앱: https://github.com/junyoungjang976/ai-havc-agent
-- Busungtk 메인: https://github.com/junyoungjang976/busungtk
+## 5) 구현 규칙(비개발자 이해 중심)
+작업 후 반드시 자연어로 설명한다.
+- 무엇을 바꿨는지
+- 왜 바꿨는지
+- 사용자가 체감하는 변화
+- 바꾸지 않으면 어떤 문제가 있었는지
+
+코드 설명은 선택 사항이며, 이해 가능한 수준으로만 한다.
+
+---
+
+## 6) 검증 규칙(실행/테스트 루프)
+코드 수정 후 가능한 범위에서 반드시 수행:
+- lint
+- typecheck (있다면)
+- test (있다면)
+- dev 서버 실행
+
+실패 시:
+- 에러 로그를 그대로 붙이지 말고 원인을 한글로 요약
+- 해결책 1~2개 제시
+- 임의로 계속 진행하지 않는다(중단 후 질문)
+
+---
+
+## 7) 결과 보고 포맷(PM 보고)
+작업 완료 시 아래 포맷으로 보고한다.
+
+- 변경된 파일 목록
+- 핵심 변경 요약(비개발자도 이해 가능)
+- 확인이 필요한 사용자 체크리스트(3개 이내)
+- 다음 작업 제안(우선순위 포함)
+
+---
+
+## 8) Git 운영(되돌리기 확보)
+- 작업 시작: feature 브랜치 생성
+- 커밋: 작은 단위(목적별)로
+- 큰 변경은 PR 단위로 분리
+- 불확실하면 커밋 전에 중단하고 질문
